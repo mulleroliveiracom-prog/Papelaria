@@ -25,50 +25,44 @@ const WHATSAPP_LINK = "https://wa.me/5534999999999"; // Fictional number for Pat
 const products = [
   {
     id: 1,
-    name: "Marca Texto Tilibra em Gel",
-    price: "R$ 14,90",
-    color: "bg-yellow-100",
-    icon: <Sparkles className="text-yellow-500" />,
+    name: "Mochila Infantil Colorida",
+    price: "R$ 129,90",
+    image: "https://i.postimg.cc/DyYq0GNC/Screenshot-20260331-102620.jpg",
     tag: "Novidade"
   },
   {
     id: 2,
-    name: "Marca Texto Tilibra Neon",
-    price: "R$ 9,90",
-    color: "bg-green-100",
-    icon: <Sparkles className="text-green-500" />,
+    name: "Kit Canetas Coloridas 12 cores",
+    price: "R$ 45,00",
+    image: "https://i.postimg.cc/SNK6mdgf/Screenshot-20260331-102624.jpg",
     tag: "Mais Vendido"
   },
   {
     id: 3,
-    name: "Marca Texto New Pen Perfumado",
-    price: "R$ 12,50",
-    color: "bg-pink-100",
-    icon: <Sparkles className="text-pink-500" />,
+    name: "Caderno Universitário Capa Dura",
+    price: "R$ 32,90",
+    image: "https://i.postimg.cc/yYNm7jLm/Screenshot-20260331-102627.jpg",
     tag: "Exclusivo"
   },
   {
     id: 4,
-    name: "Marca Texto Faber-Castell Pastel",
-    price: "R$ 8,90",
-    color: "bg-blue-100",
-    icon: <Sparkles className="text-blue-500" />,
+    name: "Estojo Escolar Moderno",
+    price: "R$ 24,50",
+    image: "https://i.postimg.cc/RV07vdgd/Screenshot-20260331-102631.jpg",
     tag: "Favorito"
   },
   {
     id: 5,
-    name: "Marca Texto Tilibra Linha Happy",
-    price: "R$ 11,90",
-    color: "bg-purple-100",
-    icon: <Sparkles className="text-purple-500" />,
+    name: "Lancheira Térmica",
+    price: "R$ 59,90",
+    image: "https://i.postimg.cc/65QrBcML/Screenshot-20260331-102634.jpg",
     tag: "Promoção"
   },
   {
     id: 6,
-    name: "Marca Texto Stabilo Neon",
-    price: "R$ 18,90",
-    color: "bg-orange-100",
-    icon: <Sparkles className="text-orange-500" />,
+    name: "Agenda 2024 Criativa",
+    price: "R$ 39,90",
+    image: "https://i.postimg.cc/90LyGwQd/Screenshot-20260331-102637.jpg",
     tag: "Premium"
   }
 ];
@@ -244,30 +238,37 @@ export default function App() {
             transition={{ duration: 0.8, delay: 0.2 }}
             className="relative"
           >
-            <div className="relative z-10 aspect-square rounded-[40px] bg-linear-to-br from-brand-blue via-brand-purple to-brand-pink shadow-2xl flex flex-col items-center justify-center p-12 overflow-hidden border-8 border-white group">
+            <div className="relative z-10 aspect-square rounded-[40px] bg-linear-to-br from-brand-blue via-brand-purple to-brand-pink shadow-2xl flex flex-col items-center justify-center p-4 overflow-hidden border-8 border-white group">
               <div className="absolute inset-0 bg-white/10 backdrop-blur-md" />
               
-              <div className="relative z-10 flex flex-col items-center">
-                <div className="w-48 h-48 bg-white rounded-[40px] flex items-center justify-center shadow-2xl rotate-3 group-hover:rotate-0 transition-transform duration-500">
-                  <span className="text-[120px] font-display font-black text-brand-purple leading-none select-none">P</span>
+              <div className="relative z-10 w-full h-full rounded-3xl overflow-hidden shadow-inner">
+                <img 
+                  src="https://i.postimg.cc/DyYq0GNC/Screenshot-20260331-102620.jpg" 
+                  alt="Destaque Paper Fácil" 
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  referrerPolicy="no-referrer"
+                />
+                <div className="absolute inset-0 bg-linear-to-t from-black/40 via-transparent to-transparent" />
+                
+                <div className="absolute bottom-6 left-6 right-6">
+                  <div className="bg-white/90 backdrop-blur-md px-4 py-3 rounded-2xl shadow-lg flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-brand-purple rounded-xl flex items-center justify-center text-white shadow-sm">
+                        <Sparkles size={20} />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold text-brand-purple uppercase tracking-widest">Destaque</p>
+                        <p className="text-sm font-bold text-gray-900">Mochila Infantil</p>
+                      </div>
+                    </div>
+                    <span className="text-brand-purple font-display font-bold">R$ 129,90</span>
+                  </div>
                 </div>
-                <div className="mt-10 text-center">
-                  <h3 className="text-4xl font-display font-bold text-white tracking-tight drop-shadow-lg">Paper Fácil</h3>
-                  <p className="text-xs font-bold text-white/80 uppercase tracking-[0.4em] mt-2">Premium Papelaria</p>
-                </div>
-              </div>
-
-              <div className="absolute bottom-6 left-6 bg-white/90 backdrop-blur-md px-4 py-2 rounded-2xl shadow-lg flex items-center gap-2">
-                <Sparkles className="text-brand-purple" size={16} />
-                <span className="text-xs font-bold text-gray-900 uppercase tracking-wider">Qualidade Premium</span>
               </div>
 
               {/* Decorative elements */}
-              <div className="absolute top-10 right-10 text-white/20 animate-pulse">
-                <Sparkles size={60} />
-              </div>
-              <div className="absolute bottom-20 right-20 text-white/10 animate-bounce">
-                <ShoppingBag size={40} />
+              <div className="absolute top-8 right-8 text-white/40 animate-pulse">
+                <Sparkles size={40} />
               </div>
             </div>
             {/* Decorative blobs */}
@@ -295,15 +296,14 @@ export default function App() {
                 transition={{ delay: index * 0.1 }}
                 className="group"
               >
-                <div className={`relative aspect-3/4 rounded-3xl overflow-hidden mb-6 shadow-lg ${product.color} flex items-center justify-center group-hover:scale-105 transition-transform duration-500`}>
-                  <div className="scale-[3] opacity-20 group-hover:scale-[4] transition-transform duration-700">
-                    {product.icon}
-                  </div>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-16 h-16 bg-white rounded-2xl shadow-xl flex items-center justify-center text-brand-purple">
-                      <ShoppingBag size={32} />
-                    </div>
-                  </div>
+                <div className="relative aspect-3/4 rounded-3xl overflow-hidden mb-6 shadow-lg group-hover:scale-105 transition-transform duration-500 border-4 border-white">
+                  <img 
+                    src={product.image} 
+                    alt={product.name} 
+                    className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                  <div className="absolute inset-0 bg-linear-to-t from-black/20 to-transparent pointer-events-none" />
                   <div className="absolute top-4 left-4">
                     <span className="px-3 py-1 bg-white/90 backdrop-blur-sm text-brand-purple text-[10px] font-bold uppercase tracking-widest rounded-full shadow-sm">
                       {product.tag}
