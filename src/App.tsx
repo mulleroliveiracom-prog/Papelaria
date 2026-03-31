@@ -173,29 +173,53 @@ export default function App() {
 
         {/* Mobile Menu */}
         {isMenuOpen && (
-          <motion.div 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="absolute top-full left-0 right-0 bg-white shadow-xl border-t border-gray-100 p-6 flex flex-col gap-4 md:hidden"
-          >
-            {["Início", "Produtos", "Promoções", "Sobre", "Contato"].map((item) => (
-              <a 
-                key={item} 
-                href={`#${item.toLowerCase()}`} 
-                className="text-lg font-medium text-gray-800"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                {item}
-              </a>
-            ))}
-            <a 
-              href={WHATSAPP_LINK} 
-              className="btn-primary btn-whatsapp flex items-center justify-center gap-2"
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/20 backdrop-blur-sm z-30 md:hidden"
+              onClick={() => setIsMenuOpen(false)}
+            />
+            <motion.div 
+              initial={{ opacity: 0, x: "100%" }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: "100%" }}
+              className="fixed top-0 right-0 bottom-0 w-4/5 max-w-sm bg-white z-50 shadow-2xl p-8 flex flex-col gap-6 md:hidden"
             >
-              <MessageCircle size={20} />
-              Fale no WhatsApp
-            </a>
-          </motion.div>
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-brand-purple rounded-lg flex items-center justify-center text-white">
+                    <Sparkles size={16} />
+                  </div>
+                  <span className="font-display font-bold text-lg">Paper Fácil</span>
+                </div>
+                <button onClick={() => setIsMenuOpen(false)} className="p-2 text-gray-500">
+                  <X size={24} />
+                </button>
+              </div>
+              {["Início", "Produtos", "Promoções", "Sobre", "Contato"].map((item) => (
+                <a 
+                  key={item} 
+                  href={`#${item.toLowerCase()}`} 
+                  className="text-xl font-display font-bold text-gray-800 hover:text-brand-purple transition-colors py-2 border-b border-gray-50"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  {item}
+                </a>
+              ))}
+              <div className="mt-auto">
+                <a 
+                  href={WHATSAPP_LINK} 
+                  className="btn-primary btn-whatsapp w-full flex items-center justify-center gap-3 py-4 text-lg"
+                >
+                  <MessageCircle size={24} />
+                  Fale no WhatsApp
+                </a>
+                <p className="text-center text-xs text-gray-400 mt-6 font-medium uppercase tracking-widest">Patrocínio - MG</p>
+              </div>
+            </motion.div>
+          </>
         )}
       </header>
 
@@ -214,7 +238,7 @@ export default function App() {
             <span className="inline-block px-4 py-1.5 bg-brand-purple/10 text-brand-purple rounded-full text-xs font-bold uppercase tracking-wider mb-6">
               Papelaria Criativa em Patrocínio - MG
             </span>
-            <h1 className="text-5xl md:text-7xl font-display font-bold leading-tight mb-6">
+            <h1 className="text-4xl sm:text-5xl md:text-7xl font-display font-bold leading-tight mb-6">
               Abasteça sua <span className="gradient-text">criatividade</span> com as melhores marcas
             </h1>
             <p className="text-lg text-gray-600 mb-10 max-w-lg">
@@ -356,7 +380,7 @@ export default function App() {
       <section id="promoções" className="py-12 px-6">
         <motion.div 
           {...fadeIn}
-          className="max-w-7xl mx-auto rounded-[40px] bg-linear-to-r from-brand-blue via-brand-purple to-brand-pink p-12 md:p-20 text-center text-white relative overflow-hidden shadow-2xl"
+          className="max-w-7xl mx-auto rounded-[40px] bg-linear-to-r from-brand-blue via-brand-purple to-brand-pink p-8 sm:p-12 md:p-20 text-center text-white relative overflow-hidden shadow-2xl"
         >
           {/* Decorative circles */}
           <div className="absolute top-0 left-0 w-64 h-64 bg-white/10 rounded-full -translate-x-1/2 -translate-y-1/2 blur-3xl" />
@@ -384,54 +408,54 @@ export default function App() {
           <div className="grid md:grid-cols-2 gap-20 items-center">
             <motion.div
               {...fadeIn}
-              className="relative"
+              className="relative mb-20 md:mb-0"
             >
               {/* Elegant Logo & Address Composition */}
               <div className="relative z-10">
                 {/* Main Logo Card */}
-                <div className="aspect-square bg-linear-to-br from-brand-blue via-brand-purple to-brand-pink rounded-[80px] shadow-2xl flex flex-col items-center justify-center p-12 relative overflow-hidden border-12 border-white">
+                <div className="aspect-square bg-linear-to-br from-brand-blue via-brand-purple to-brand-pink rounded-[60px] md:rounded-[80px] shadow-2xl flex flex-col items-center justify-center p-8 md:p-12 relative overflow-hidden border-8 md:border-12 border-white">
                   <div className="absolute inset-0 bg-white/10 backdrop-blur-sm" />
                   
                   <div className="relative z-10 flex flex-col items-center">
                     <motion.div 
                       animate={{ y: [0, -10, 0] }}
                       transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-                      className="w-40 h-40 bg-white rounded-[40px] flex items-center justify-center shadow-2xl relative rotate-3"
+                      className="w-24 h-24 md:w-40 md:h-40 bg-white rounded-[30px] md:rounded-[40px] flex items-center justify-center shadow-2xl relative rotate-3"
                     >
-                      <span className="text-[100px] font-display font-black text-brand-purple leading-none select-none -rotate-3">P</span>
+                      <span className="text-[60px] md:text-[100px] font-display font-black text-brand-purple leading-none select-none -rotate-3">P</span>
                     </motion.div>
                     
-                    <div className="mt-10 text-center">
-                      <h3 className="text-5xl font-display font-bold text-white tracking-tight drop-shadow-lg">Paper Fácil</h3>
-                      <div className="flex items-center justify-center gap-3 mt-3">
-                        <div className="h-px w-8 bg-white/50" />
-                        <span className="text-xs font-bold text-white uppercase tracking-[0.4em]">Premium Papelaria</span>
-                        <div className="h-px w-8 bg-white/50" />
+                    <div className="mt-6 md:mt-10 text-center">
+                      <h3 className="text-3xl md:text-5xl font-display font-bold text-white tracking-tight drop-shadow-lg">Paper Fácil</h3>
+                      <div className="flex items-center justify-center gap-3 mt-2 md:mt-3">
+                        <div className="h-px w-6 md:w-8 bg-white/50" />
+                        <span className="text-[10px] md:text-xs font-bold text-white uppercase tracking-[0.4em]">Premium Papelaria</span>
+                        <div className="h-px w-6 md:w-8 bg-white/50" />
                       </div>
                     </div>
                   </div>
 
                   {/* Sparkles */}
-                  <div className="absolute top-10 right-10 text-white/40 animate-pulse">
-                    <Sparkles size={40} />
-                  </div>
-                  <div className="absolute bottom-10 left-10 text-white/40 animate-pulse delay-700">
+                  <div className="absolute top-6 right-6 md:top-10 md:right-10 text-white/40 animate-pulse">
                     <Sparkles size={30} />
+                  </div>
+                  <div className="absolute bottom-6 left-6 md:bottom-10 md:left-10 text-white/40 animate-pulse delay-700">
+                    <Sparkles size={20} />
                   </div>
                 </div>
 
                 {/* Floating Address Card */}
                 <motion.div 
-                  initial={{ x: 50, opacity: 0 }}
-                  whileInView={{ x: 0, opacity: 1 }}
+                  initial={{ y: 50, opacity: 0 }}
+                  whileInView={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.4 }}
-                  className="absolute -bottom-10 -right-6 md:-right-12 bg-white p-8 rounded-[40px] shadow-2xl border border-gray-100 max-w-[280px] group hover:-translate-y-2 transition-transform duration-300"
+                  className="absolute -bottom-12 -right-2 md:-right-12 bg-white p-6 md:p-8 rounded-[30px] md:rounded-[40px] shadow-2xl border border-gray-100 max-w-[240px] md:max-w-[280px] group hover:-translate-y-2 transition-transform duration-300"
                 >
-                  <div className="w-14 h-14 bg-brand-purple/10 rounded-2xl flex items-center justify-center text-brand-purple mb-6 group-hover:scale-110 transition-transform">
-                    <MapPin size={32} />
+                  <div className="w-10 h-10 md:w-14 md:h-14 bg-brand-purple/10 rounded-xl md:rounded-2xl flex items-center justify-center text-brand-purple mb-4 md:mb-6 group-hover:scale-110 transition-transform">
+                    <MapPin size={24} md:size={32} />
                   </div>
-                  <h4 className="text-2xl font-display font-bold mb-3">Onde estamos</h4>
-                  <p className="text-gray-500 leading-relaxed mb-6">
+                  <h4 className="text-xl md:text-2xl font-display font-bold mb-2 md:mb-3">Onde estamos</h4>
+                  <p className="text-xs md:text-gray-500 leading-relaxed mb-4 md:mb-6">
                     Av. José Maria Alkimin, 777<br />
                     Centro, Patrocínio - MG
                   </p>
@@ -439,10 +463,10 @@ export default function App() {
                     href="https://maps.google.com/?q=Av.+José+Maria+Alkimin,+777+-+Centro,+Patrocínio+-+MG" 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-brand-purple font-bold hover:gap-4 transition-all"
+                    className="inline-flex items-center gap-2 text-brand-purple text-sm font-bold hover:gap-4 transition-all"
                   >
                     Ver no Google Maps
-                    <ChevronRight size={18} />
+                    <ChevronRight size={16} />
                   </a>
                 </motion.div>
               </div>
