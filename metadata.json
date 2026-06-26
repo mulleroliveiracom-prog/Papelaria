@@ -1,5 +1,6 @@
 {
-  "name": "ArteExpress IA",
-  "description": "Página Ponte de alta conversão para aprovação rápida de anúncios e filtragem de tráfego qualificado.",
-  "requestFramePermissions": []
+  "name": "Bio Site | @elzadias",
+  "description": "Bio Link de alta conversão otimizado para distribuição de tráfego orgânico.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
