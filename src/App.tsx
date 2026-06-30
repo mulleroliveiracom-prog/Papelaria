@@ -46,68 +46,35 @@ function App() {
         {/* Buttons Links List */}
         <div className="w-full space-y-4">
           
-          {/* Link 1: Acesso VIP (Main product, high prominence, slow pulse) */}
-          <motion.a
-            href="https://elza-omega.vercel.app"
-            target="_blank"
-            rel="noopener noreferrer"
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="block"
-          >
-            <div className="relative group overflow-hidden rounded-2xl bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 p-[1px] shadow-xl shadow-purple-950/20 active:scale-[0.98] transition-transform duration-200">
-              {/* Pulsing glow background effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-violet-500/20 to-indigo-500/20 blur-xl opacity-80 group-hover:opacity-100 transition-opacity" />
-              
-              <div className="relative bg-zinc-950/20 rounded-[15px] py-4 px-6 flex items-center justify-between text-center font-bold text-white transition-colors animate-pulse">
-                <span className="w-5" /> {/* Spacer to align title */}
-                <span className="text-base font-extrabold tracking-wide uppercase flex items-center gap-2">
-                  🔥 ACESSO VIP COMPLETO <span className="text-xs bg-black/40 text-emerald-300 py-1 px-2.5 rounded-full font-black border border-emerald-500/20">R$ 9,99</span>
-                </span>
-                <ExternalLink className="w-5 h-5 text-zinc-300/80 group-hover:text-white transition-colors" strokeWidth={1.8} />
-              </div>
-            </div>
-          </motion.a>
-
-          {/* Link 2: Ver Prévias Gratuitas (Translucid) */}
+          {/* Link: Ver Prévias Gratuitas (Premium High-Conversion Destaque) */}
           <motion.a
             href="https://t.me/Julia38bot"
             target="_blank"
             rel="noopener noreferrer"
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="block"
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="block w-full"
           >
-            <div className="group rounded-2xl bg-white/5 hover:bg-white/10 border border-zinc-800/60 p-[1px] active:scale-[0.98] transition-all duration-200 shadow-lg">
-              <div className="py-4 px-6 flex items-center justify-between font-bold text-white">
-                <span className="w-5" /> {/* Spacer */}
-                <span className="text-base font-bold tracking-wide flex items-center gap-2 text-zinc-100">
+            <div className="relative group overflow-hidden rounded-2xl bg-gradient-to-r from-pink-500 via-rose-500 to-violet-600 hover:from-pink-400 hover:to-violet-500 p-[1.5px] shadow-2xl shadow-pink-500/30 active:scale-[0.98] transition-all duration-300">
+              {/* Pulsing neon glow behind the button */}
+              <div className="absolute inset-0 bg-gradient-to-r from-pink-500 via-rose-500 to-violet-600 blur-2xl opacity-80 group-hover:opacity-100 transition-opacity animate-pulse" />
+              
+              <div className="relative bg-zinc-950/85 hover:bg-zinc-950/60 rounded-[14px] py-5 px-6 flex items-center justify-between text-center font-bold text-white transition-all">
+                {/* Live pinging dot indicator inside the button */}
+                <span className="relative flex h-3.5 w-3.5 shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-pink-500"></span>
+                </span>
+                
+                <span className="text-base md:text-lg font-black tracking-wide uppercase flex items-center gap-2">
                   😈 Ver Prévias Gratuitas
+                  <span className="text-[9px] bg-gradient-to-r from-amber-400 to-pink-500 text-white font-black py-0.5 px-2 rounded-full uppercase tracking-widest shadow-md">
+                    Liberado
+                  </span>
                 </span>
-                <ExternalLink className="w-5 h-5 text-zinc-500 group-hover:text-zinc-300 transition-colors" strokeWidth={1.8} />
-              </div>
-            </div>
-          </motion.a>
-
-          {/* Link 3: Grupo Secreto Zangi (Sigilo Total) */}
-          <motion.a
-            href="https://serverflow.dad/c/zangi-4fc2"
-            target="_blank"
-            rel="noopener noreferrer"
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="block"
-          >
-            <div className="group rounded-2xl bg-white/5 hover:bg-white/10 border border-zinc-800/60 p-[1px] active:scale-[0.98] transition-all duration-200 shadow-lg">
-              <div className="py-4 px-6 flex items-center justify-between font-bold text-white">
-                <span className="w-5" /> {/* Spacer */}
-                <span className="text-base font-bold tracking-wide flex items-center gap-2 text-zinc-100">
-                  💬 Grupo Secreto no Zangi (Sigilo Total)
-                </span>
-                <ExternalLink className="w-5 h-5 text-zinc-500 group-hover:text-zinc-300 transition-colors" strokeWidth={1.8} />
+                
+                <ExternalLink className="w-5 h-5 text-pink-400 group-hover:text-white group-hover:translate-x-0.5 transition-all shrink-0" strokeWidth={2.2} />
               </div>
             </div>
           </motion.a>
