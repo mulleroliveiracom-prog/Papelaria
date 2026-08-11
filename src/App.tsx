@@ -120,7 +120,7 @@ function App() {
   const progressPercentage = Math.round(((currentQuestion + 1) / QUESTIONS.length) * 100);
 
   return (
-    <div className="relative min-h-screen w-full bg-gradient-to-b from-zinc-950 via-black to-zinc-950 text-zinc-100 font-sans flex flex-col items-center justify-between p-4 md:p-6 overflow-x-hidden selection:bg-red-500/20 selection:text-red-200">
+    <div className="relative min-h-[100dvh] w-full bg-gradient-to-b from-zinc-950 via-black to-zinc-950 text-zinc-100 font-sans flex flex-col items-center justify-between p-3.5 sm:p-6 overflow-x-hidden selection:bg-red-500/20 selection:text-red-200">
       
       {/* Background Star Particles */}
       <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
@@ -145,12 +145,12 @@ function App() {
       <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md h-80 bg-purple-900/10 blur-[120px] pointer-events-none z-0" />
 
       {/* Top Scarcity Bar / Sticky Yellow Header if in Quiz or Result */}
-      <div className="w-full max-w-md z-20 pt-2 pb-4">
+      <div className="w-full max-w-sm sm:max-w-md z-20 pt-1.5 pb-3">
         {stage === 'quiz' && (
           <div className="space-y-2">
-            <div className="flex justify-between items-center text-xs font-bold text-amber-400 uppercase tracking-wider">
+            <div className="flex justify-between items-center text-[11px] sm:text-xs font-bold text-amber-400 uppercase tracking-wider">
               <span className="flex items-center gap-1">
-                <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400 shrink-0" />
                 Pergunta {currentQuestion + 1} de {QUESTIONS.length}
               </span>
               <span>{progressPercentage}% Concluído</span>
@@ -168,16 +168,16 @@ function App() {
         )}
 
         {stage === 'result' && (
-          <div className="w-full bg-amber-500/10 border border-amber-500/30 rounded-xl py-2 px-3 text-center">
-            <span className="text-amber-400 font-extrabold text-xs uppercase tracking-widest flex items-center justify-center gap-1.5 animate-pulse">
-              <Zap className="w-3.5 h-3.5 fill-amber-400" /> ATENÇÃO: OFERTA TEMPORÁRIA LIBERADA
+          <div className="w-full bg-amber-500/10 border border-amber-500/30 rounded-xl py-2 px-2.5 text-center">
+            <span className="text-amber-400 font-extrabold text-[11px] sm:text-xs uppercase tracking-wider sm:tracking-widest flex items-center justify-center gap-1.5 animate-pulse">
+              <Zap className="w-3.5 h-3.5 fill-amber-400 shrink-0" /> ATENÇÃO: OFERTA TEMPORÁRIA LIBERADA
             </span>
           </div>
         )}
       </div>
 
       {/* Main Content Area */}
-      <div className="w-full max-w-md flex-1 flex flex-col justify-center items-center z-10 py-4">
+      <div className="w-full max-w-sm sm:max-w-md flex-1 flex flex-col justify-center items-center z-10 py-2 sm:py-4">
         <AnimatePresence mode="wait">
 
           {/* ==================== TELA 1: INTRODUÇÃO ==================== */}
@@ -188,40 +188,40 @@ function App() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.4 }}
-              className="w-full bg-zinc-900/80 backdrop-blur-xl border border-zinc-800/80 rounded-3xl p-6 md:p-8 shadow-2xl shadow-black/90 text-center space-y-6 relative overflow-hidden"
+              className="w-full bg-zinc-900/80 backdrop-blur-xl border border-zinc-800/80 rounded-3xl p-5 sm:p-7 shadow-2xl shadow-black/90 text-center space-y-4 sm:space-y-6 relative overflow-hidden"
             >
               {/* Top Pill Seal */}
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-purple-950/60 border border-purple-500/40 text-purple-300 text-xs font-black uppercase tracking-widest shadow-md">
-                <Lock className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+              <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-purple-950/60 border border-purple-500/40 text-purple-300 text-[11px] sm:text-xs font-black uppercase tracking-widest shadow-md">
+                <Lock className="w-3 h-3 text-amber-400 fill-amber-400" />
                 <span>VERIFICAÇÃO</span>
               </div>
 
               {/* Title */}
-              <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight leading-tight">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-white tracking-tight leading-tight">
                 Você seria capaz de me <span className="text-red-500 underline decoration-red-500/50 decoration-2">impressionar</span>? <br />
-                <span className="text-zinc-400 font-medium text-lg md:text-xl">(O Teste da Elza)</span>
+                <span className="text-zinc-400 font-medium text-base sm:text-lg md:text-xl">(O Teste da Elza)</span>
               </h1>
 
               {/* Red Passion / Mystery Accent Line */}
-              <div className="w-16 h-1 bg-gradient-to-r from-red-600 to-amber-500 rounded-full mx-auto" />
+              <div className="w-14 sm:w-16 h-1 bg-gradient-to-r from-red-600 to-amber-500 rounded-full mx-auto" />
 
               {/* Text Copy */}
-              <p className="text-zinc-300 text-sm md:text-base leading-relaxed text-left bg-zinc-950/60 p-4 rounded-2xl border border-zinc-800/60 font-normal">
+              <p className="text-zinc-300 text-xs sm:text-sm md:text-base leading-relaxed text-left bg-zinc-950/60 p-3.5 sm:p-4 rounded-2xl border border-zinc-800/60 font-normal">
                 "Muitos caras chegam na minha DM achando que sabem exatamente como me agradar, mas a verdade é que poucos têm a atitude que me prende. Vamos fazer um joguinho rápido? Se você provar que sabe me tratar em um encontro, eu tenho um presente bem particular te esperando no final..."
               </p>
 
               {/* Start Button */}
               <button
                 onClick={() => setStage('quiz')}
-                className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-red-600 via-red-500 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-extrabold text-base md:text-lg tracking-wider uppercase shadow-xl shadow-red-950/50 active:scale-[0.98] transition-all flex items-center justify-center gap-2 group border border-red-400/30"
+                className="w-full py-3.5 sm:py-4 px-4 sm:px-6 rounded-2xl bg-gradient-to-r from-red-600 via-red-500 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-extrabold text-sm sm:text-base md:text-lg tracking-wider uppercase shadow-xl shadow-red-950/50 active:scale-[0.98] transition-all flex items-center justify-center gap-2 group border border-red-400/30"
               >
                 <span>🔥 INICIAR O TESTE AGORA</span>
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
               </button>
 
               {/* Trust Badge */}
-              <div className="flex items-center justify-center gap-1.5 text-zinc-500 text-xs">
-                <ShieldCheck className="w-4 h-4 text-emerald-500" />
+              <div className="flex items-center justify-center gap-1.5 text-zinc-500 text-[11px] sm:text-xs">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
                 <span>Teste 100% Privado e Anônimo</span>
               </div>
             </motion.div>
@@ -235,28 +235,28 @@ function App() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -30 }}
               transition={{ duration: 0.3 }}
-              className="w-full bg-zinc-900/80 backdrop-blur-xl border border-zinc-800/80 rounded-3xl p-6 md:p-8 shadow-2xl shadow-black/90 space-y-6"
+              className="w-full bg-zinc-900/80 backdrop-blur-xl border border-zinc-800/80 rounded-3xl p-5 sm:p-7 shadow-2xl shadow-black/90 space-y-4 sm:space-y-6"
             >
               {/* Question Header */}
-              <div className="space-y-2">
-                <span className="text-red-500 font-extrabold text-xs uppercase tracking-widest flex items-center gap-1">
-                  <Flame className="w-4 h-4 fill-red-500 text-red-500" />
+              <div className="space-y-1.5">
+                <span className="text-red-500 font-extrabold text-[11px] sm:text-xs uppercase tracking-widest flex items-center gap-1">
+                  <Flame className="w-3.5 h-3.5 fill-red-500 text-red-500" />
                   Pergunta {QUESTIONS[currentQuestion].id}
                 </span>
-                <h2 className="text-lg md:text-xl font-bold text-white leading-snug">
+                <h2 className="text-base sm:text-lg md:text-xl font-bold text-white leading-snug">
                   {QUESTIONS[currentQuestion].question}
                 </h2>
               </div>
 
               {/* Options */}
-              <div className="space-y-3">
+              <div className="space-y-2.5 sm:space-y-3">
                 {QUESTIONS[currentQuestion].options.map((opt) => (
                   <button
                     key={opt.label}
                     onClick={() => handleSelectOption(opt.label)}
-                    className="w-full text-left p-4 rounded-2xl bg-zinc-950/70 hover:bg-zinc-800/80 border border-zinc-800 hover:border-red-500/50 text-zinc-200 hover:text-white font-medium text-sm md:text-base transition-all duration-200 flex items-start gap-3 active:scale-[0.99] group shadow-md"
+                    className="w-full text-left p-3.5 sm:p-4 rounded-2xl bg-zinc-950/70 hover:bg-zinc-800/80 border border-zinc-800 hover:border-red-500/50 text-zinc-200 hover:text-white font-medium text-xs sm:text-sm md:text-base transition-all duration-200 flex items-start gap-3 active:scale-[0.99] group shadow-md"
                   >
-                    <span className="w-7 h-7 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 group-hover:bg-red-500 group-hover:text-white font-black text-xs flex items-center justify-center shrink-0 transition-colors">
+                    <span className="w-6 h-6 sm:w-7 sm:h-7 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 group-hover:bg-red-500 group-hover:text-white font-black text-xs flex items-center justify-center shrink-0 transition-colors">
                       {opt.label}
                     </span>
                     <span className="leading-relaxed pt-0.5">{opt.text}</span>
@@ -274,19 +274,19 @@ function App() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
               transition={{ duration: 0.4 }}
-              className="w-full bg-zinc-900/90 backdrop-blur-xl border border-zinc-800/80 rounded-3xl p-8 shadow-2xl text-center space-y-6 my-auto"
+              className="w-full bg-zinc-900/90 backdrop-blur-xl border border-zinc-800/80 rounded-3xl p-6 sm:p-8 shadow-2xl text-center space-y-5 my-auto"
             >
-              <div className="relative w-24 h-24 mx-auto flex items-center justify-center">
+              <div className="relative w-20 h-20 sm:w-24 sm:h-24 mx-auto flex items-center justify-center">
                 {/* Circular pulse glowing ring */}
                 <div className="absolute inset-0 rounded-full border-4 border-zinc-800 border-t-red-500 border-r-amber-400 animate-spin" />
-                <Flame className="w-10 h-10 text-red-500 fill-red-500 animate-bounce" />
+                <Flame className="w-8 h-8 sm:w-10 sm:h-10 text-red-500 fill-red-500 animate-bounce" />
               </div>
 
-              <div className="space-y-2">
-                <h3 className="text-xl font-extrabold text-white">
+              <div className="space-y-1.5">
+                <h3 className="text-lg sm:text-xl font-extrabold text-white">
                   Calculando sua compatibilidade...
                 </h3>
-                <p className="text-xs text-zinc-400 font-mono">
+                <p className="text-[11px] sm:text-xs text-zinc-400 font-mono">
                   Analisando suas atitudes e respostas ({calcProgress}%)
                 </p>
               </div>
@@ -300,7 +300,7 @@ function App() {
               </div>
 
               <div className="flex items-center justify-center gap-2 text-xs text-amber-400 font-semibold">
-                <Sparkles className="w-4 h-4 animate-spin" />
+                <Sparkles className="w-3.5 h-3.5 animate-spin" />
                 <span>Gerando seu resultado exclusivo...</span>
               </div>
             </motion.div>
@@ -313,27 +313,27 @@ function App() {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
-              className="w-full bg-zinc-900/90 backdrop-blur-xl border border-zinc-800/80 rounded-3xl p-6 md:p-8 shadow-2xl shadow-black/95 space-y-6 text-left"
+              className="w-full bg-zinc-900/90 backdrop-blur-xl border border-zinc-800/80 rounded-3xl p-5 sm:p-7 shadow-2xl shadow-black/95 space-y-4 sm:space-y-6 text-left"
             >
               {/* Match Highlight Header */}
-              <div className="bg-gradient-to-r from-red-950/80 via-zinc-900 to-amber-950/80 border border-red-500/40 rounded-2xl p-4 text-center space-y-1 shadow-lg">
+              <div className="bg-gradient-to-r from-red-950/80 via-zinc-900 to-amber-950/80 border border-red-500/40 rounded-2xl p-3.5 sm:p-4 text-center space-y-1 shadow-lg">
                 <div className="flex items-center justify-center gap-1 text-amber-400 mb-1">
-                  <Star className="w-4 h-4 fill-amber-400" />
-                  <Star className="w-4 h-4 fill-amber-400" />
-                  <Star className="w-4 h-4 fill-amber-400" />
-                  <Star className="w-4 h-4 fill-amber-400" />
-                  <Star className="w-4 h-4 fill-amber-400" />
+                  <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-amber-400" />
+                  <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-amber-400" />
+                  <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-amber-400" />
+                  <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-amber-400" />
+                  <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-amber-400" />
                 </div>
-                <h2 className="text-xl md:text-2xl font-black text-white flex items-center justify-center gap-2">
+                <h2 className="text-lg sm:text-xl md:text-2xl font-black text-white flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
                   <span>Pontuação:</span>
-                  <span className="text-red-500 bg-red-500/10 px-2.5 py-0.5 rounded-lg border border-red-500/30">
+                  <span className="text-red-500 bg-red-500/10 px-2 py-0.5 rounded-lg border border-red-500/30">
                     98% de Compatibilidade! 🔥
                   </span>
                 </h2>
               </div>
 
               {/* Exact Copy Paragraphs */}
-              <div className="space-y-4 text-zinc-300 text-sm md:text-base leading-relaxed bg-zinc-950/60 p-5 rounded-2xl border border-zinc-800/60">
+              <div className="space-y-3 sm:space-y-4 text-zinc-300 text-xs sm:text-sm md:text-base leading-relaxed bg-zinc-950/60 p-4 sm:p-5 rounded-2xl border border-zinc-800/60">
                 <p>
                   "Uau... Eu confesso que estou surpresa. A maioria dos caras erra feio na atitude, mas você acertou em cheio no que me deixa louca. Você tem exatamente a mistura de confiança e mistério que eu adoro em um homem.
                 </p>
@@ -355,7 +355,7 @@ function App() {
               </div>
 
               {/* Primary Green CTA Button (High-Contrast Emerald, Pulsing) */}
-              <div className="pt-2">
+              <div className="pt-1 sm:pt-2">
                 <a
                   href={BUY_LINK}
                   target="_blank"
@@ -365,20 +365,20 @@ function App() {
                   {/* Neon Glow behind green CTA */}
                   <div className="absolute inset-0 bg-emerald-500/40 rounded-2xl blur-xl animate-pulse" />
 
-                  <div className="relative py-5 px-6 rounded-2xl bg-gradient-to-r from-emerald-500 via-green-500 to-emerald-600 hover:from-emerald-400 hover:to-green-400 active:scale-[0.98] text-zinc-950 font-black text-base md:text-lg tracking-wide shadow-2xl shadow-emerald-500/30 transition-all border border-emerald-300 flex items-center justify-center gap-2">
-                    <span className="animate-bounce">👉</span>
-                    <span>QUERO MEU PRESENTE E ACESSO VIP (R$ 3,99)</span>
+                  <div className="relative py-4 sm:py-5 px-3.5 sm:px-6 rounded-2xl bg-gradient-to-r from-emerald-500 via-green-500 to-emerald-600 hover:from-emerald-400 hover:to-green-400 active:scale-[0.98] text-zinc-950 font-black text-xs sm:text-base md:text-lg tracking-wide shadow-2xl shadow-emerald-500/30 transition-all border border-emerald-300 flex items-center justify-center gap-1.5 sm:gap-2 leading-tight">
+                    <span className="animate-bounce shrink-0">👉</span>
+                    <span className="uppercase">QUERO MEU PRESENTE E ACESSO VIP (R$ 3,99)</span>
                   </div>
                 </a>
               </div>
 
               {/* Security and Guarantee info */}
-              <div className="flex flex-col items-center justify-center gap-1.5 text-center text-xs text-zinc-500 pt-1">
+              <div className="flex flex-col items-center justify-center gap-1 text-center text-[11px] sm:text-xs text-zinc-500 pt-0.5">
                 <div className="flex items-center gap-1.5 text-emerald-400 font-bold">
-                  <CheckCircle2 className="w-4 h-4" />
+                  <CheckCircle2 className="w-3.5 h-3.5" />
                   <span>Acesso Imediato e Discreto</span>
                 </div>
-                <p className="text-[11px] text-zinc-600">
+                <p className="text-[10px] sm:text-[11px] text-zinc-600">
                   Taxa simbólica anti-spam de R$ 3,99. Liberação instantânea no seu celular.
                 </p>
               </div>
@@ -389,7 +389,7 @@ function App() {
       </div>
 
       {/* Footer */}
-      <footer className="w-full max-w-md text-center py-4 z-10 border-t border-zinc-900/60">
+      <footer className="w-full max-w-sm sm:max-w-md text-center py-3.5 z-10 border-t border-zinc-900/60">
         <p className="text-[10px] text-zinc-600 uppercase tracking-widest font-semibold">
           © 2026 O Teste da Elza • Todos os direitos reservados
         </p>
