@@ -1,6 +1,6 @@
 {
-  "name": "Abra Seu Presente",
-  "description": "Landing page interativa com verificação e presente exclusivo.",
+  "name": "O Teste da Elza | Quiz Interativo",
+  "description": "Quiz interativo de alta conversão para liberação de acesso VIP exclusivo.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
