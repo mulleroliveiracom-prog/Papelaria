@@ -5,7 +5,8 @@ import { Lock } from 'lucide-react';
 const REDIRECT_URL = 'https://t.me/Elzadamasceno_bot';
 
 function App() {
-  const handleRedirect = () => {
+  const handleRedirect = (e?: React.MouseEvent | React.TouchEvent) => {
+    // Navigate reliably
     window.location.href = REDIRECT_URL;
   };
 
@@ -23,7 +24,7 @@ function App() {
 
   return (
     <div 
-      onClick={handleRedirect}
+      onClick={() => handleRedirect()}
       className="relative min-h-screen w-full bg-gradient-to-b from-[#14002c] via-[#0d001e] to-[#040008] text-white font-sans flex flex-col items-center justify-between p-6 overflow-hidden cursor-pointer select-none"
     >
       {/* Starry Sky - Fixed White Particles */}
@@ -79,11 +80,16 @@ function App() {
         </motion.div>
 
         {/* Interactive 3D Gift Box Element */}
-        <motion.div
+        <motion.a
+          href={REDIRECT_URL}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleRedirect();
+          }}
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.7, delay: 0.2 }}
-          className="relative my-4 flex items-center justify-center group"
+          className="relative my-4 flex items-center justify-center group outline-none"
         >
           {/* Radial Backlight / Aura behind Gift Box */}
           <div className="absolute w-64 h-64 bg-gradient-to-r from-amber-500/30 via-pink-600/25 to-purple-600/30 rounded-full blur-3xl animate-pulse pointer-events-none" />
@@ -99,7 +105,7 @@ function App() {
               repeat: Infinity, 
               ease: "easeInOut" 
             }}
-            className="relative w-64 h-64 md:w-72 md:h-72 flex items-center justify-center drop-shadow-[0_20px_35px_rgba(230,0,70,0.4)]"
+            className="relative w-64 h-64 md:w-72 md:h-72 flex items-center justify-center drop-shadow-[0_20px_35px_rgba(230,0,70,0.4)] transition-transform active:scale-95"
           >
             <svg
               viewBox="0 0 320 320"
@@ -212,7 +218,7 @@ function App() {
               <rect x="58" y="159" width="204" height="6" fill="#000000" opacity="0.3" />
             </svg>
           </motion.div>
-        </motion.div>
+        </motion.a>
 
         {/* Footer Call to Action */}
         <motion.div
