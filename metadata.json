@@ -1,6 +1,6 @@
 {
-  "name": "Abra Seu Presente",
-  "description": "Landing page interativa com verificação e presente exclusivo.",
+  "name": "Elza Damasceno VIP",
+  "description": "Site responsivo e moderno de assinatura VIP para a modelo Elza Damasceno com fotos, planos e checkout seguro.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
