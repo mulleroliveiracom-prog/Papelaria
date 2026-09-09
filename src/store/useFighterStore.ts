@@ -6,6 +6,21 @@ import confetti from 'canvas-confetti';
 
 const STORAGE_KEY_FIGHTERS = 'batalha_presidencial_fighters_v1';
 const STORAGE_KEY_GIFTS = 'batalha_presidencial_gifts_v1';
+const STORAGE_KEY_ROSES_TO_START = 'batalha_presidencial_roses_to_start_v1';
+
+function loadInitialRosesToStart(): number {
+  if (typeof window === 'undefined') return 10;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_ROSES_TO_START);
+    if (raw) {
+      const parsed = parseInt(raw, 10);
+      if (!isNaN(parsed) && parsed > 0) return parsed;
+    }
+  } catch (e) {
+    console.error('Failed to load rosesToStart', e);
+  }
+  return 10;
+}
 
 function loadInitialFighters(): Fighter[] {
   if (typeof window === 'undefined') return DEFAULT_FIGHTERS;
@@ -70,6 +85,8 @@ interface FighterStoreState {
   autoLiveSimulator: boolean;
   p2AiEnabled: boolean;
   screenMode: 'mobile' | 'fullscreen';
+  rosesToStart: number;
+  currentRosesCount: number;
 
   // Actions
   selectPlayer1: (id: string) => void;
@@ -78,6 +95,9 @@ interface FighterStoreState {
   startMatch: () => void;
   proceedToCountdown: () => void;
   finishCountdown: () => void;
+  setRosesToStart: (count: number) => void;
+  addPreFightRose: (targetFighter?: 1 | 2, count?: number) => void;
+  resetPreFightRoses: () => void;
   
   // Combat mechanics
   executeAttack: (attacker: 1 | 2, moveKey: 'move1' | 'move2' | 'move3' | 'special') => void;
@@ -126,10 +146,39 @@ export const useFighterStore = create<FighterStoreState>((set, get) => ({
   autoLiveSimulator: false,
   p2AiEnabled: false,
   screenMode: 'mobile',
+  rosesToStart: loadInitialRosesToStart(),
+  currentRosesCount: 0,
 
   selectPlayer1: (id) => set({ player1Id: id }),
   selectPlayer2: (id) => set({ player2Id: id }),
   setScreen: (screen) => set({ screen }),
+
+  setRosesToStart: (count: number) => {
+    const validCount = Math.max(1, count);
+    try {
+      localStorage.setItem(STORAGE_KEY_ROSES_TO_START, validCount.toString());
+    } catch (e) {
+      console.error(e);
+    }
+    set({ rosesToStart: validCount });
+  },
+
+  addPreFightRose: (targetFighter = 1, count = 1) => {
+    const state = get();
+    const nextCount = state.currentRosesCount + count;
+    soundManager.playGift();
+    set({ currentRosesCount: nextCount });
+
+    if (nextCount >= state.rosesToStart) {
+      // Meta atingida! Ir para a contagem e iniciar
+      soundManager.playSpecial();
+      get().proceedToCountdown();
+    }
+  },
+
+  resetPreFightRoses: () => {
+    set({ currentRosesCount: 0 });
+  },
 
   startMatch: () => {
     const { fighters, player1Id, player2Id } = get();
@@ -152,6 +201,7 @@ export const useFighterStore = create<FighterStoreState>((set, get) => ({
       lastDamage: 0,
       damageNumbers: [],
       currentGiftAlert: null,
+      currentRosesCount: 0,
       combatLogs: [
         {
           id: `log-${Date.now()}`,

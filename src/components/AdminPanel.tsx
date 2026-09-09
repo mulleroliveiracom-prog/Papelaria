@@ -31,6 +31,8 @@ export const AdminPanel: React.FC = () => {
     deleteFighter,
     updateGiftMove,
     resetToDefaults,
+    rosesToStart,
+    setRosesToStart,
   } = useFighterStore();
 
   const [activeTab, setActiveTab] = useState<'gifts' | 'stats' | 'create' | 'backup'>('gifts');
@@ -271,6 +273,47 @@ export const AdminPanel: React.FC = () => {
       {/* TAB 1: GIFTS CONFIGURATION (REQUIREMENT 21) */}
       {activeTab === 'gifts' && (
         <div className="max-w-6xl w-full mx-auto bg-zinc-900/80 rounded-3xl p-6 border border-zinc-800 shadow-xl">
+          
+          {/* SEÇÃO CONFIGURÁVEL: ROSAS NECESSÁRIAS PARA INICIAR A LUTA (ITEM 6) */}
+          <div className="mb-6 p-4 rounded-2xl bg-rose-950/40 border border-rose-600/60 shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <span className="text-[10px] font-black uppercase tracking-widest text-rose-400 block mb-0.5">
+                🌹 ITEM 6: META DA PRÉ-LUTA PARA LIVE
+              </span>
+              <h3 className="text-base sm:text-lg font-black uppercase text-white">
+                ROSAS NECESSÁRIAS PARA INICIAR A BATALHA
+              </h3>
+              <p className="text-xs text-zinc-300">
+                Quantidade de rosas que o público da live precisa enviar antes da batalha começar automaticamente.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 bg-zinc-950 px-3 py-2 rounded-xl border border-zinc-700">
+              <button
+                type="button"
+                onClick={() => setRosesToStart(Math.max(1, rosesToStart - 1))}
+                className="w-8 h-8 rounded-lg bg-zinc-800 text-white font-black text-sm hover:bg-zinc-700 cursor-pointer"
+              >
+                -
+              </button>
+              <input
+                type="number"
+                min="1"
+                max="1000"
+                value={rosesToStart}
+                onChange={(e) => setRosesToStart(parseInt(e.target.value, 10) || 1)}
+                className="w-16 bg-transparent text-center font-mono font-black text-lg text-yellow-300 focus:outline-hidden"
+              />
+              <button
+                type="button"
+                onClick={() => setRosesToStart(rosesToStart + 1)}
+                className="w-8 h-8 rounded-lg bg-zinc-800 text-white font-black text-sm hover:bg-zinc-700 cursor-pointer"
+              >
+                +
+              </button>
+            </div>
+          </div>
+
           <div className="mb-6">
             <span className="text-xs font-black uppercase text-amber-400 tracking-widest block mb-1">
               REGRA 21: MATRIZ DE PRESENTES E GOLPES
