@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useFighterStore } from '../store/useFighterStore';
 import { FighterSprite } from './FighterSprite';
@@ -17,6 +17,11 @@ import {
   Shield,
   User,
   Users,
+  ChevronLeft,
+  ChevronRight,
+  MoveHorizontal,
+  Maximize2,
+  Minimize2,
 } from 'lucide-react';
 import { soundManager } from '../utils/audio';
 
@@ -52,9 +57,65 @@ export const BattleArena: React.FC = () => {
   const p1 = fighters.find((f) => f.id === player1Id) || fighters[0];
   const p2 = fighters.find((f) => f.id === player2Id) || fighters[1] || fighters[0];
 
+  const arenaScrollRef = useRef<HTMLDivElement>(null);
+  const [cameraPosition, setCameraPosition] = useState<'both' | 'p1' | 'p2'>('both');
   const [giftTarget, setGiftTarget] = useState<1 | 2>(1);
   const [controlMode, setControlMode] = useState<'p1' | 'p2' | 'split'>('p1');
   const [showLogs, setShowLogs] = useState(false);
+  const [fitBothMode, setFitBothMode] = useState(false);
+
+  // Função para deslizar a arena suavemente para o lado (1P, Centro/Ambos ou 2P)
+  const slideArenaTo = (target: 'p1' | 'both' | 'p2') => {
+    setCameraPosition(target);
+    if (!arenaScrollRef.current) return;
+    const el = arenaScrollRef.current;
+    const maxScroll = el.scrollWidth - el.clientWidth;
+    if (maxScroll <= 0) return;
+
+    if (target === 'p1') {
+      el.scrollTo({ left: 0, behavior: 'smooth' });
+    } else if (target === 'p2') {
+      el.scrollTo({ left: maxScroll, behavior: 'smooth' });
+    } else {
+      el.scrollTo({ left: maxScroll / 2, behavior: 'smooth' });
+    }
+  };
+
+  // Atualiza indicador da câmera quando o usuário arrasta/desliza a tela manualmente
+  const handleArenaScroll = () => {
+    if (!arenaScrollRef.current) return;
+    const el = arenaScrollRef.current;
+    const maxScroll = el.scrollWidth - el.clientWidth;
+    if (maxScroll <= 15) return;
+    const ratio = el.scrollLeft / maxScroll;
+    if (ratio < 0.25) {
+      if (cameraPosition !== 'p1') setCameraPosition('p1');
+    } else if (ratio > 0.75) {
+      if (cameraPosition !== 'p2') setCameraPosition('p2');
+    } else {
+      if (cameraPosition !== 'both') setCameraPosition('both');
+    }
+  };
+
+  // Ajusta o modo de controle e opcionalmente desliza a visão para o lutador ativo
+  const handleControlModeChange = (mode: 'p1' | 'p2' | 'split') => {
+    setControlMode(mode);
+    if (mode === 'p1') {
+      slideArenaTo('p1');
+    } else if (mode === 'p2') {
+      slideArenaTo('p2');
+    } else {
+      slideArenaTo('both');
+    }
+  };
+
+  // Centralizar a arena ao iniciar
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      slideArenaTo('both');
+    }, 120);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Simulação de live com presentes da audiência (opcional, acionado no botão Play/Pause)
   useEffect(() => {
@@ -285,94 +346,197 @@ export const BattleArena: React.FC = () => {
 
       </header>
 
-      {/* ÁREA CENTRAL: RINGUE DE COMBATE / SPRITES / DIÁLOGOS (ESCALA PERFEITA PARA ANDROID) */}
-      <main className="flex-1 min-h-0 relative flex items-end justify-around pb-2 px-2 max-w-4xl mx-auto w-full overflow-hidden">
-        
-        {/* NÚMEROS DE DANO FLUTUANTES (FLOATING COMBAT TEXT) */}
-        {damageNumbers.map((dmg) => (
-          <motion.div
-            key={dmg.id}
-            initial={{ opacity: 1, y: 0, scale: dmg.isCrit ? 1.4 : 1 }}
-            animate={{ opacity: 0, y: -60, scale: dmg.isCrit ? 1.8 : 1.2 }}
-            transition={{ duration: 0.7, ease: 'easeOut' }}
-            style={{ left: `${dmg.x}%`, top: `${dmg.y}%` }}
-            className="absolute pointer-events-none z-30 font-black font-mono text-xl sm:text-2xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]"
+      {/* BARRA DE CÂMERA & DESLIZAR O RINGUE (MOSTRAR OS 2 PERSONAGENS) */}
+      <div className="relative z-20 px-2 py-0.5 max-w-4xl mx-auto w-full flex items-center justify-between gap-1.5 shrink-0">
+        <div className="flex items-center gap-1 bg-zinc-900/90 backdrop-blur-md px-1.5 py-1 rounded-xl border border-zinc-800 shadow-md w-full justify-between">
+          
+          {/* Botão Deslizar para 1P */}
+          <button
+            onClick={() => slideArenaTo('p1')}
+            className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase transition-all flex items-center gap-1 cursor-pointer active:scale-95 ${
+              cameraPosition === 'p1'
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-600/40'
+                : 'text-zinc-400 hover:text-white bg-zinc-800/60'
+            }`}
+            title={`Deslizar a câmera para ver ${p1.name} (1P)`}
           >
-            <span style={{ color: dmg.color }}>
-              {dmg.isCrit ? `💥 -${dmg.value}!` : `-${dmg.value}`}
-            </span>
-            {dmg.isCrit && (
-              <span className="block text-[10px] font-sans font-black text-amber-300 uppercase tracking-widest text-center">
-                CRÍTICO!
+            <ChevronLeft className="w-3.5 h-3.5" />
+            <span className="truncate max-w-[80px] xs:max-w-none">1P: {p1.name}</span>
+          </button>
+
+          {/* Botão Centralizar / Ver Ambos */}
+          <button
+            onClick={() => slideArenaTo('both')}
+            className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase transition-all flex items-center gap-1 cursor-pointer active:scale-95 ${
+              cameraPosition === 'both'
+                ? 'bg-amber-500 text-zinc-950 font-black shadow-md shadow-amber-500/40'
+                : 'text-zinc-300 hover:text-white bg-zinc-800/60'
+            }`}
+            title="Deslizar para o centro para ver os 2 personagens lado a lado"
+          >
+            <MoveHorizontal className="w-3.5 h-3.5" />
+            <span>Ver Ambos</span>
+          </button>
+
+          {/* Botão Deslizar para 2P */}
+          <button
+            onClick={() => slideArenaTo('p2')}
+            className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase transition-all flex items-center gap-1 cursor-pointer active:scale-95 ${
+              cameraPosition === 'p2'
+                ? 'bg-red-600 text-white shadow-md shadow-red-600/40'
+                : 'text-zinc-400 hover:text-white bg-zinc-800/60'
+            }`}
+            title={`Deslizar a câmera para ver ${p2.name} (2P)`}
+          >
+            <span className="truncate max-w-[80px] xs:max-w-none">2P: {p2.name}</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+
+          {/* Toggle de Encaixar Tudo na Tela sem deslizar */}
+          <button
+            onClick={() => setFitBothMode(!fitBothMode)}
+            className={`p-1 rounded-lg text-[9px] font-bold border transition-all cursor-pointer active:scale-95 shrink-0 ${
+              fitBothMode
+                ? 'bg-emerald-950/80 border-emerald-500 text-emerald-300'
+                : 'bg-zinc-800/80 border-zinc-700 text-zinc-400 hover:text-zinc-200'
+            }`}
+            title={fitBothMode ? 'Modo Zoom Panorâmico' : 'Encaixar Ambos na Tela'}
+          >
+            {fitBothMode ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+          </button>
+        </div>
+      </div>
+
+      {/* ÁREA CENTRAL: RINGUE DE COMBATE COM DESLIZAR PARA O LADO E TOQUE PANORÂMICO */}
+      <div className="flex-1 min-h-0 relative w-full overflow-hidden flex flex-col justify-end">
+        
+        {/* BOTÃO FLUTUANTE ESQUERDO: DESLIZAR PARA 1P */}
+        <button
+          onClick={() => slideArenaTo(cameraPosition === 'p2' ? 'both' : 'p1')}
+          className="absolute left-1 bottom-10 z-30 w-7 h-11 bg-zinc-900/85 hover:bg-zinc-800 active:bg-blue-600 border border-zinc-700/90 rounded-r-xl flex items-center justify-center text-zinc-300 active:text-white shadow-xl backdrop-blur-md cursor-pointer transition-all active:scale-90"
+          title="Deslizar para a esquerda"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+
+        {/* BOTÃO FLUTUANTE DIREITO: DESLIZAR PARA 2P */}
+        <button
+          onClick={() => slideArenaTo(cameraPosition === 'p1' ? 'both' : 'p2')}
+          className="absolute right-1 bottom-10 z-30 w-7 h-11 bg-zinc-900/85 hover:bg-zinc-800 active:bg-red-600 border border-zinc-700/90 rounded-l-xl flex items-center justify-center text-zinc-300 active:text-white shadow-xl backdrop-blur-md cursor-pointer transition-all active:scale-90"
+          title="Deslizar para a direita"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
+
+        {/* PISTA DESLIZÁVEL DO COMBATE */}
+        <main
+          ref={arenaScrollRef}
+          onScroll={handleArenaScroll}
+          className="w-full h-full overflow-x-auto overflow-y-hidden snap-x snap-mandatory scroll-smooth touch-pan-x no-scrollbar pb-2 relative flex items-end select-none"
+        >
+          <div
+            className={`h-full relative flex items-end justify-between px-6 sm:px-12 mx-auto transition-all duration-300 ${
+              fitBothMode
+                ? 'w-full min-w-full'
+                : 'min-w-[480px] xs:min-w-[520px] sm:min-w-full'
+            }`}
+          >
+            {/* NÚMEROS DE DANO FLUTUANTES (FLOATING COMBAT TEXT) */}
+            {damageNumbers.map((dmg) => (
+              <motion.div
+                key={dmg.id}
+                initial={{ opacity: 1, y: 0, scale: dmg.isCrit ? 1.4 : 1 }}
+                animate={{ opacity: 0, y: -60, scale: dmg.isCrit ? 1.8 : 1.2 }}
+                transition={{ duration: 0.7, ease: 'easeOut' }}
+                style={{ left: `${dmg.x}%`, top: `${dmg.y}%` }}
+                className="absolute pointer-events-none z-30 font-black font-mono text-xl sm:text-2xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]"
+              >
+                <span style={{ color: dmg.color }}>
+                  {dmg.isCrit ? `💥 -${dmg.value}!` : `-${dmg.value}`}
+                </span>
+                {dmg.isCrit && (
+                  <span className="block text-[10px] font-sans font-black text-amber-300 uppercase tracking-widest text-center">
+                    CRÍTICO!
+                  </span>
+                )}
+              </motion.div>
+            ))}
+
+            {/* LUTADOR 1 (JOGADOR 1) */}
+            <div className="flex flex-col items-center relative shrink-0 snap-start pl-2">
+              {/* Balão de Fala do Especial */}
+              {p1State === 'special' && (
+                <motion.div
+                  initial={{ scale: 0, y: 10 }}
+                  animate={{ scale: 1, y: 0 }}
+                  className="absolute -top-12 sm:-top-16 bg-white text-zinc-950 font-black text-[10px] sm:text-xs px-2.5 py-1 rounded-xl shadow-xl border-2 border-zinc-900 z-20 whitespace-nowrap max-w-[150px] truncate"
+                >
+                  🗣️ {p1.dialogues.specialQuote}
+                </motion.div>
+              )}
+
+              {/* Sprite adaptado para proporção de celular sem cortes */}
+              <div className={`transform origin-bottom ${fitBothMode ? 'scale-70 sm:scale-90' : 'scale-85 sm:scale-100'}`}>
+                <FighterSprite
+                  fighter={p1}
+                  state={p1State}
+                  facing="right"
+                  size={fitBothMode ? 'sm' : 'md'}
+                />
+              </div>
+
+              <span className="text-[10px] font-black tracking-wider text-blue-300 uppercase bg-blue-950/90 px-2.5 py-0.5 rounded-md border border-blue-700/60 shadow-md">
+                1P: {p1.name}
               </span>
-            )}
-          </motion.div>
-        ))}
+            </div>
 
-        {/* LUTADOR 1 (JOGADOR 1) */}
-        <div className="flex flex-col items-center relative shrink-0">
-          {/* Balão de Fala do Especial */}
-          {p1State === 'special' && (
-            <motion.div
-              initial={{ scale: 0, y: 10 }}
-              animate={{ scale: 1, y: 0 }}
-              className="absolute -top-12 sm:-top-16 bg-white text-zinc-950 font-black text-[10px] sm:text-xs px-2.5 py-1 rounded-xl shadow-xl border-2 border-zinc-900 z-20 whitespace-nowrap max-w-[150px] truncate"
-            >
-              🗣️ {p1.dialogues.specialQuote}
-            </motion.div>
-          )}
+            {/* CENTRO: Ícone decorativo e indicador de deslizar */}
+            <div className="flex flex-col items-center shrink-0 snap-center px-2 pointer-events-none opacity-50">
+              <span className="text-[7px] font-black uppercase tracking-widest text-amber-400 bg-zinc-900/80 px-2 py-0.5 rounded-full border border-zinc-800">
+                DEBATE
+              </span>
+              <span className="text-[8px] text-zinc-400 font-mono mt-0.5">VS</span>
+            </div>
 
-          {/* Sprite adaptado para proporção de celular */}
-          <div className="transform scale-85 sm:scale-100 origin-bottom">
-            <FighterSprite
-              fighter={p1}
-              state={p1State}
-              facing="right"
-              size="md"
-            />
+            {/* LUTADOR 2 (JOGADOR 2 - CIRO / NUNCA CORTADO) */}
+            <div className="flex flex-col items-center relative shrink-0 snap-end pr-3">
+              {/* Balão de Fala do Especial */}
+              {p2State === 'special' && (
+                <motion.div
+                  initial={{ scale: 0, y: 10 }}
+                  animate={{ scale: 1, y: 0 }}
+                  className="absolute -top-12 sm:-top-16 bg-white text-zinc-950 font-black text-[10px] sm:text-xs px-2.5 py-1 rounded-xl shadow-xl border-2 border-zinc-900 z-20 whitespace-nowrap max-w-[150px] truncate"
+                >
+                  🗣️ {p2.dialogues.specialQuote}
+                </motion.div>
+              )}
+
+              {/* Sprite adaptado para proporção de celular sem cortes */}
+              <div className={`transform origin-bottom ${fitBothMode ? 'scale-70 sm:scale-90' : 'scale-85 sm:scale-100'}`}>
+                <FighterSprite
+                  fighter={p2}
+                  state={p2State}
+                  facing="left"
+                  size={fitBothMode ? 'sm' : 'md'}
+                />
+              </div>
+
+              <span className="text-[10px] font-black tracking-wider text-red-300 uppercase bg-red-950/90 px-2.5 py-0.5 rounded-md border border-red-700/60 shadow-md">
+                2P: {p2.name}
+              </span>
+            </div>
+
           </div>
+        </main>
 
-          <span className="text-[10px] font-black tracking-wider text-blue-300 uppercase bg-blue-950/90 px-2 py-0.5 rounded-md border border-blue-700/60 shadow-md">
-            {p1.name}
+        {/* Dica visual discreta de deslizar para o lado */}
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 pointer-events-none pb-0.5 text-center">
+          <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest bg-zinc-950/70 px-2 py-0.5 rounded-full border border-zinc-800/60">
+            ↔️ Deslize para o lado para navegar
           </span>
         </div>
 
-        {/* CENTRO: Ícone decorativo sutil */}
-        <div className="flex flex-col items-center opacity-30 pointer-events-none shrink-0">
-          <span className="text-[8px] font-black uppercase tracking-widest text-zinc-500">
-            DEBATE
-          </span>
-        </div>
-
-        {/* LUTADOR 2 (JOGADOR 2 - MANUAL) */}
-        <div className="flex flex-col items-center relative shrink-0">
-          {/* Balão de Fala do Especial */}
-          {p2State === 'special' && (
-            <motion.div
-              initial={{ scale: 0, y: 10 }}
-              animate={{ scale: 1, y: 0 }}
-              className="absolute -top-12 sm:-top-16 bg-white text-zinc-950 font-black text-[10px] sm:text-xs px-2.5 py-1 rounded-xl shadow-xl border-2 border-zinc-900 z-20 whitespace-nowrap max-w-[150px] truncate"
-            >
-              🗣️ {p2.dialogues.specialQuote}
-            </motion.div>
-          )}
-
-          {/* Sprite adaptado para proporção de celular */}
-          <div className="transform scale-85 sm:scale-100 origin-bottom">
-            <FighterSprite
-              fighter={p2}
-              state={p2State}
-              facing="left"
-              size="md"
-            />
-          </div>
-
-          <span className="text-[10px] font-black tracking-wider text-red-300 uppercase bg-red-950/90 px-2 py-0.5 rounded-md border border-red-700/60 shadow-md">
-            {p2.name}
-          </span>
-        </div>
-
-      </main>
+      </div>
 
       {/* ÁREA INFERIOR: CONTROLES DE COMBATE ERGONÔMICOS PARA CELULAR ANDROID */}
       <footer className="relative z-20 w-full px-2 pb-2 pt-1 sm:px-4 sm:pb-3 max-w-4xl mx-auto shrink-0 bg-gradient-to-t from-zinc-950 via-zinc-950/95 to-transparent">
@@ -416,7 +580,7 @@ export const BattleArena: React.FC = () => {
         {/* SELETOR DE CONTROLE: 1P, 2P OU MODO DUPLO SIMULTÂNEO */}
         <div className="flex items-center justify-between gap-1.5 mb-1.5 bg-zinc-900/60 p-1 rounded-xl border border-zinc-800/80">
           <button
-            onClick={() => setControlMode('p1')}
+            onClick={() => handleControlModeChange('p1')}
             className={`flex-1 py-1 px-2 rounded-lg text-[11px] font-black uppercase transition-all flex items-center justify-center gap-1 cursor-pointer active:scale-95 ${
               controlMode === 'p1'
                 ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
@@ -428,7 +592,7 @@ export const BattleArena: React.FC = () => {
           </button>
 
           <button
-            onClick={() => setControlMode('split')}
+            onClick={() => handleControlModeChange('split')}
             className={`py-1 px-2 rounded-lg text-[10px] font-black uppercase transition-all flex items-center justify-center gap-1 cursor-pointer active:scale-95 ${
               controlMode === 'split'
                 ? 'bg-amber-500 text-zinc-950 font-black shadow-md shadow-amber-500/30'
@@ -441,7 +605,7 @@ export const BattleArena: React.FC = () => {
           </button>
 
           <button
-            onClick={() => setControlMode('p2')}
+            onClick={() => handleControlModeChange('p2')}
             className={`flex-1 py-1 px-2 rounded-lg text-[11px] font-black uppercase transition-all flex items-center justify-center gap-1 cursor-pointer active:scale-95 ${
               controlMode === 'p2'
                 ? 'bg-red-600 text-white shadow-md shadow-red-600/30'
