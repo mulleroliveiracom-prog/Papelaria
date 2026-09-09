@@ -68,6 +68,8 @@ interface FighterStoreState {
   combatLogs: CombatLog[];
   isMuted: boolean;
   autoLiveSimulator: boolean;
+  p2AiEnabled: boolean;
+  screenMode: 'mobile' | 'fullscreen';
 
   // Actions
   selectPlayer1: (id: string) => void;
@@ -84,6 +86,9 @@ interface FighterStoreState {
   returnToSelection: () => void;
   toggleAutoLive: () => void;
   toggleMute: () => void;
+  toggleP2Ai: () => void;
+  setP2AiEnabled: (enabled: boolean) => void;
+  toggleScreenMode: () => void;
 
   // Admin and persistence methods
   updateFighter: (id: string, updates: Partial<Fighter>) => void;
@@ -119,6 +124,8 @@ export const useFighterStore = create<FighterStoreState>((set, get) => ({
   combatLogs: [],
   isMuted: false,
   autoLiveSimulator: false,
+  p2AiEnabled: true,
+  screenMode: 'mobile',
 
   selectPlayer1: (id) => set({ player1Id: id }),
   selectPlayer2: (id) => set({ player2Id: id }),
@@ -429,6 +436,18 @@ export const useFighterStore = create<FighterStoreState>((set, get) => ({
     const next = !get().isMuted;
     soundManager.enabled = !next;
     set({ isMuted: next });
+  },
+
+  toggleP2Ai: () => {
+    set((s) => ({ p2AiEnabled: !s.p2AiEnabled }));
+  },
+
+  setP2AiEnabled: (enabled: boolean) => {
+    set({ p2AiEnabled: enabled });
+  },
+
+  toggleScreenMode: () => {
+    set((s) => ({ screenMode: s.screenMode === 'mobile' ? 'fullscreen' : 'mobile' }));
   },
 
   // Admin and persistence methods

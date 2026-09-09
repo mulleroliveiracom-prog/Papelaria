@@ -70,47 +70,44 @@ export const BattlePresentation: React.FC = () => {
 
       {/* PHASE 1 & 2: INTRO AND VERSUS SHOWCASE */}
       {phase !== 'countdown' && (
-        <div className="relative w-full max-w-6xl mx-auto px-4 flex flex-col items-center justify-center min-h-[500px]">
+        <div className="relative w-full max-w-4xl mx-auto px-3 flex flex-col items-center justify-center min-h-[90dvh] max-h-[100dvh] overflow-hidden">
           
           {/* Main Title Badge */}
           <motion.div
-            initial={{ scale: 0.5, opacity: 0, y: -40 }}
+            initial={{ scale: 0.5, opacity: 0, y: -20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, type: 'spring' }}
-            className="flex items-center gap-2 px-6 py-2 rounded-full bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-zinc-950 font-black text-sm sm:text-base uppercase tracking-widest shadow-2xl shadow-amber-500/40 border-2 border-white mb-6"
+            transition={{ duration: 0.4, type: 'spring' }}
+            className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-zinc-950 font-black text-xs sm:text-sm uppercase tracking-wider shadow-xl shadow-amber-500/30 border border-white mb-2 shrink-0"
           >
-            <Zap className="w-5 h-5 fill-zinc-950" />
+            <Zap className="w-3.5 h-3.5 fill-zinc-950" />
             <span>⚡ BATALHA PRESIDENCIAL ⚡</span>
-            <Zap className="w-5 h-5 fill-zinc-950" />
+            <Zap className="w-3.5 h-3.5 fill-zinc-950" />
           </motion.div>
 
-          {/* Opponents Banner Split */}
-          <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-8 items-center relative">
+          {/* Opponents Banner Split - Perfeito no Celular Android */}
+          <div className="w-full flex flex-col md:grid md:grid-cols-2 gap-2 sm:gap-6 items-center relative">
             
             {/* P1 Entrance Slide */}
             <motion.div
-              initial={{ x: -300, opacity: 0 }}
+              initial={{ x: -200, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
-              transition={{ duration: 0.6, ease: 'easeOut' }}
-              className="flex flex-col items-center md:items-end text-center md:text-right relative"
+              transition={{ duration: 0.5, ease: 'easeOut' }}
+              className="flex items-center justify-center md:justify-end gap-2 w-full"
             >
-              <div className="flex items-center gap-4">
-                <div className="order-2 md:order-1">
-                  <span className="text-xs font-black tracking-widest text-blue-400 uppercase bg-blue-950/80 px-3 py-1 rounded-full border border-blue-700/60">
-                    JOGADOR 1
-                  </span>
-                  <h2 className="text-4xl sm:text-6xl font-black text-white tracking-tight uppercase mt-2">
-                    {p1.name}
-                  </h2>
-                  <p className="text-sm font-bold text-amber-300 mt-1 uppercase tracking-wider">
-                    {p1.dialogues.entry}
-                  </p>
-                  <p className="text-xs text-zinc-400 italic mt-0.5">
-                    "{p1.tagline}"
-                  </p>
-                </div>
-                <div className="order-1 md:order-2 w-44 h-56 flex items-center justify-center">
-                  <FighterSprite fighter={p1} state="attack" facing="right" size="lg" />
+              <div className="text-right">
+                <span className="text-[10px] font-black tracking-wider text-blue-400 uppercase bg-blue-950/80 px-2 py-0.5 rounded-full border border-blue-700/60">
+                  JOGADOR 1
+                </span>
+                <h2 className="text-xl sm:text-4xl font-black text-white tracking-tight uppercase mt-0.5">
+                  {p1.name}
+                </h2>
+                <p className="text-[11px] font-bold text-amber-300 line-clamp-1">
+                  {p1.dialogues.entry}
+                </p>
+              </div>
+              <div className="w-20 h-28 sm:w-36 sm:h-44 flex items-center justify-center shrink-0">
+                <div className="scale-75 sm:scale-100 origin-center">
+                  <FighterSprite fighter={p1} state="attack" facing="right" size="sm" />
                 </div>
               </div>
             </motion.div>
@@ -119,37 +116,34 @@ export const BattlePresentation: React.FC = () => {
             <motion.div
               initial={{ scale: 0, rotate: -180 }}
               animate={{ scale: 1, rotate: 0 }}
-              transition={{ delay: 0.4, type: 'spring', damping: 10 }}
-              className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full bg-gradient-to-tr from-amber-500 to-rose-600 border-4 border-zinc-950 items-center justify-center text-3xl font-black text-white shadow-2xl shadow-rose-600/50 z-20"
+              transition={{ delay: 0.3, type: 'spring', damping: 10 }}
+              className="w-9 h-9 sm:w-16 sm:h-16 rounded-full bg-gradient-to-tr from-amber-500 to-rose-600 border-2 border-white flex items-center justify-center text-xs sm:text-xl font-black text-white shadow-xl shadow-rose-600/50 z-20 shrink-0 my-0.5 md:my-0 md:absolute md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2"
             >
               VS
             </motion.div>
 
             {/* P2 Entrance Slide */}
             <motion.div
-              initial={{ x: 300, opacity: 0 }}
+              initial={{ x: 200, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
-              transition={{ duration: 0.6, ease: 'easeOut', delay: 0.2 }}
-              className="flex flex-col items-center md:items-start text-center md:text-left relative"
+              transition={{ duration: 0.5, ease: 'easeOut', delay: 0.15 }}
+              className="flex items-center justify-center md:justify-start gap-2 w-full"
             >
-              <div className="flex items-center gap-4">
-                <div className="w-44 h-56 flex items-center justify-center">
-                  <FighterSprite fighter={p2} state="attack" facing="left" size="lg" />
+              <div className="w-20 h-28 sm:w-36 sm:h-44 flex items-center justify-center shrink-0">
+                <div className="scale-75 sm:scale-100 origin-center">
+                  <FighterSprite fighter={p2} state="attack" facing="left" size="sm" />
                 </div>
-                <div>
-                  <span className="text-xs font-black tracking-widest text-red-400 uppercase bg-red-950/80 px-3 py-1 rounded-full border border-red-700/60">
-                    JOGADOR 2
-                  </span>
-                  <h2 className="text-4xl sm:text-6xl font-black text-white tracking-tight uppercase mt-2">
-                    {p2.name}
-                  </h2>
-                  <p className="text-sm font-bold text-amber-300 mt-1 uppercase tracking-wider">
-                    {p2.dialogues.entry}
-                  </p>
-                  <p className="text-xs text-zinc-400 italic mt-0.5">
-                    "{p2.tagline}"
-                  </p>
-                </div>
+              </div>
+              <div className="text-left">
+                <span className="text-[10px] font-black tracking-wider text-red-400 uppercase bg-red-950/80 px-2 py-0.5 rounded-full border border-red-700/60">
+                  JOGADOR 2
+                </span>
+                <h2 className="text-xl sm:text-4xl font-black text-white tracking-tight uppercase mt-0.5">
+                  {p2.name}
+                </h2>
+                <p className="text-[11px] font-bold text-amber-300 line-clamp-1">
+                  {p2.dialogues.entry}
+                </p>
               </div>
             </motion.div>
 
@@ -157,15 +151,23 @@ export const BattlePresentation: React.FC = () => {
 
           {/* Arena Staging Announcement text */}
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.8 }}
-            className="mt-8 text-center"
+            transition={{ delay: 0.5 }}
+            className="mt-3 text-center"
           >
-            <p className="text-xs sm:text-sm text-zinc-400 uppercase tracking-widest font-bold">
+            <p className="text-[10px] sm:text-xs text-zinc-400 uppercase tracking-widest font-bold">
               ARENA NACIONAL DE DEBATES • HORÁRIO NOBRE
             </p>
           </motion.div>
+
+          {/* Botão rápido para pular contagem */}
+          <button
+            onClick={() => finishCountdown()}
+            className="mt-2.5 px-3 py-1 rounded-full bg-zinc-900/90 border border-zinc-700 text-[10px] font-black text-zinc-400 hover:text-white uppercase tracking-wider cursor-pointer active:scale-95"
+          >
+            Pular Introdução ⏩
+          </button>
 
         </div>
       )}

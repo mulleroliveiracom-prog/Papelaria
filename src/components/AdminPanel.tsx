@@ -186,7 +186,7 @@ export const AdminPanel: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white p-4 sm:p-6 select-none">
+    <div className="h-full overflow-y-auto bg-zinc-950 text-white p-3 sm:p-6 select-none">
       
       {/* Top Header */}
       <div className="max-w-6xl w-full mx-auto flex items-center justify-between pb-4 border-b border-zinc-800">
