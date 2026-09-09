@@ -14,7 +14,6 @@ import {
   Sparkles,
   AlertCircle,
   PlusCircle,
-  Bot,
   User,
 } from 'lucide-react';
 import { soundManager } from '../utils/audio';
@@ -25,13 +24,11 @@ export const SelectionScreen: React.FC = () => {
     player1Id,
     player2Id,
     isMuted,
-    p2AiEnabled,
     selectPlayer1,
     selectPlayer2,
     startMatch,
     setScreen,
     toggleMute,
-    toggleP2Ai,
   } = useFighterStore();
 
   const [activeSlot, setActiveSlot] = useState<1 | 2>(1);
@@ -84,20 +81,6 @@ export const SelectionScreen: React.FC = () => {
 
         {/* Action Controls */}
         <div className="flex items-center gap-1.5">
-          {/* Botão IA Toggle */}
-          <button
-            onClick={toggleP2Ai}
-            className={`px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1 cursor-pointer active:scale-95 ${
-              p2AiEnabled
-                ? 'bg-emerald-950/80 border-emerald-500 text-emerald-300 shadow-sm shadow-emerald-500/30'
-                : 'bg-zinc-800/80 border-zinc-700 text-zinc-400'
-            }`}
-            title="Jogador 2 Luta Sozinho com IA"
-          >
-            <Bot className={`w-3.5 h-3.5 ${p2AiEnabled ? 'text-emerald-400 animate-pulse' : 'text-zinc-500'}`} />
-            <span className="text-[11px] font-bold hidden xs:inline">{p2AiEnabled ? 'IA P2: ON' : 'IA P2: OFF'}</span>
-          </button>
-
           <button
             onClick={toggleMute}
             className="p-2 rounded-xl bg-zinc-800/80 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 cursor-pointer active:scale-95"
@@ -188,7 +171,7 @@ export const SelectionScreen: React.FC = () => {
                 </span>
                 <div className="truncate">
                   <span className="text-[10px] text-red-400 uppercase font-black block">
-                    {p2AiEnabled ? '🤖 IA Oponente' : 'Jogador 2'}
+                    Jogador 2
                   </span>
                   <span className="text-xs sm:text-sm font-black text-white uppercase truncate block">
                     {p2.name}
@@ -376,7 +359,6 @@ export const SelectionScreen: React.FC = () => {
         >
           <Swords className="w-5 h-5 animate-bounce" />
           <span>ENTRAR NA BATALHA: {p1.name} VS {p2.name}</span>
-          {p2AiEnabled && <span className="text-[10px] bg-zinc-950 text-emerald-400 px-1.5 py-0.5 rounded font-black">🤖 IA</span>}
         </button>
       </div>
 

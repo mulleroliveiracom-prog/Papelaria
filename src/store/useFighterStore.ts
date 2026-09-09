@@ -124,7 +124,7 @@ export const useFighterStore = create<FighterStoreState>((set, get) => ({
   combatLogs: [],
   isMuted: false,
   autoLiveSimulator: false,
-  p2AiEnabled: true,
+  p2AiEnabled: false,
   screenMode: 'mobile',
 
   selectPlayer1: (id) => set({ player1Id: id }),
