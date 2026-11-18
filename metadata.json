@@ -1,6 +1,6 @@
 {
-  "name": "Batalha Presidencial",
-  "description": "Jogo cartunesco e paródico de luta entre candidatos políticos brasileiros com sistema de seleção de lutadores, presentes de live interativos e painel administrativo.",
+  "name": "Meu Bebê em um Sonho",
+  "description": "Plataforma de ensaios fotográficos newborn com inteligência artificial. Crie prévias gratuitas com marca-d'água e desbloqueie pacotes em alta resolução.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

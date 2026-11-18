@@ -1,85 +1,378 @@
-import React from 'react';
-import { useFighterStore } from './store/useFighterStore';
-import { SelectionScreen } from './components/SelectionScreen';
-import { BattlePresentation } from './components/BattlePresentation';
-import { BattleArena } from './components/BattleArena';
-import { AdminPanel } from './components/AdminPanel';
-import { Smartphone, Monitor } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { Navbar } from './components/Navbar';
+import { HeroSection } from './components/HeroSection';
+import { ExampleGallerySection } from './components/ExampleGallerySection';
+import { StudioWorkflow } from './components/StudioWorkflow';
+import { WatermarkedResultSection } from './components/WatermarkedResultSection';
+import { PricingPackagesSection } from './components/PricingPackagesSection';
+import { SuccessGallerySection } from './components/SuccessGallerySection';
+import { FaqAndFooter } from './components/FaqAndFooter';
+import { AdminPanelModal } from './components/AdminPanelModal';
+import type { OrderPublicView, PackageId, SessionPublicView } from './types/studio';
+
+const SESSION_STORAGE_KEY = 'meu_bebe_em_um_sonho_session_v1';
+
+interface SavedSessionCredentials {
+  sessionId: string;
+  sessionToken: string;
+}
 
 export function App() {
-  const { screen, screenMode, toggleScreenMode } = useFighterStore();
-  const isFightScreen = screen === 'battle' || screen === 'announcement' || screen === 'countdown';
+  const [session, setSession] = useState<SessionPublicView | null>(null);
+  const [isCreatingSession, setIsCreatingSession] = useState(true);
+  const [retentionHours, setRetentionHours] = useState(168);
+  const [activeImageProvider, setActiveImageProvider] = useState<
+    'cloudflare-workers-ai' | 'google-genai' | 'unconfigured'
+  >('unconfigured');
 
-  const renderScreen = () => {
-    switch (screen) {
-      case 'admin':
-        return <AdminPanel />;
-      case 'announcement':
-      case 'countdown':
-        return <BattlePresentation />;
-      case 'battle':
-        return <BattleArena />;
-      case 'selection':
-      default:
-        return <SelectionScreen />;
+  const [creatingOrderPackageId, setCreatingOrderPackageId] = useState<PackageId | null>(null);
+  const [checkingOrder, setCheckingOrder] = useState(false);
+
+  const [recoverModalOpen, setRecoverModalOpen] = useState(false);
+  const [adminModalOpen, setAdminModalOpen] = useState(false);
+
+  const persistCredentials = (s: SessionPublicView) => {
+    try {
+      const creds: SavedSessionCredentials = {
+        sessionId: s.sessionId,
+        sessionToken: s.sessionToken,
+      };
+      window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(creds));
+    } catch {
+      // ignore storage errors
     }
   };
 
+  const createFreshSession = useCallback(async (): Promise<SessionPublicView | null> => {
+    setIsCreatingSession(true);
+    try {
+      const res = await fetch('/api/sessions', { method: 'POST' });
+      if (!res.ok) return null;
+      const created = (await res.json()) as SessionPublicView;
+      setSession(created);
+      persistCredentials(created);
+      return created;
+    } finally {
+      setIsCreatingSession(false);
+    }
+  }, []);
+
+  // Restore saved session on reload so parents never lose progress
+  useEffect(() => {
+    let cancelled = false;
+
+    fetch('/api/health')
+      .then((r) => r.json())
+      .then(
+        (d: {
+          retentionHours?: number;
+          activeImageProvider?: 'cloudflare-workers-ai' | 'google-genai' | 'unconfigured';
+        }) => {
+          if (!cancelled) {
+            if (d.retentionHours) setRetentionHours(d.retentionHours);
+            if (d.activeImageProvider) setActiveImageProvider(d.activeImageProvider);
+          }
+        }
+      )
+      .catch(() => undefined);
+
+    const bootstrap = async () => {
+      try {
+        const raw = window.localStorage.getItem(SESSION_STORAGE_KEY);
+        if (raw) {
+          const creds = JSON.parse(raw) as SavedSessionCredentials;
+          if (creds.sessionId && creds.sessionToken) {
+            const res = await fetch(
+              `/api/sessions/${creds.sessionId}?token=${encodeURIComponent(creds.sessionToken)}`
+            );
+            if (res.ok) {
+              const restored = (await res.json()) as SessionPublicView;
+              if (!cancelled) {
+                setSession(restored);
+                setIsCreatingSession(false);
+              }
+              return;
+            }
+          }
+        }
+      } catch {
+        // fall through to new session
+      }
+
+      if (!cancelled) {
+        await createFreshSession();
+      }
+    };
+
+    bootstrap();
+    return () => {
+      cancelled = true;
+    };
+  }, [createFreshSession]);
+
+  const scrollToSection = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  const handleUploadPhoto = useCallback(
+    async (consentAccepted: boolean, imageBase64: string) => {
+      const activeSession = session ?? (await createFreshSession());
+      if (!activeSession) {
+        throw new Error('Não foi possível iniciar sua sessão.');
+      }
+
+      const res = await fetch(`/api/sessions/${activeSession.sessionId}/upload`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token: activeSession.sessionToken,
+          consentAccepted,
+          imageBase64,
+        }),
+      });
+
+      const data = (await res.json()) as SessionPublicView & { error?: string };
+      if (!res.ok) {
+        throw new Error(data.error ?? 'Erro ao enviar fotografia.');
+      }
+      setSession(data);
+      persistCredentials(data);
+    },
+    [session, createFreshSession]
+  );
+
+  const handleGeneratePhotos = useCallback(
+    async (scenarioIds: string[]): Promise<{ ok: boolean; error?: string }> => {
+      if (!session) {
+        return { ok: false, error: 'Sessão não encontrada.' };
+      }
+
+      const res = await fetch(`/api/sessions/${session.sessionId}/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token: session.sessionToken,
+          scenarioIds,
+        }),
+      });
+
+      const data = (await res.json()) as
+        | SessionPublicView
+        | { error?: string; session?: SessionPublicView };
+
+      if (!res.ok) {
+        const errObj = data as { error?: string; session?: SessionPublicView };
+        if (errObj.session) {
+          setSession(errObj.session);
+        }
+        return {
+          ok: false,
+          error: errObj.error ?? 'Erro ao processar as imagens.',
+        };
+      }
+
+      const updated = data as SessionPublicView;
+      setSession(updated);
+      persistCredentials(updated);
+      setTimeout(() => scrollToSection('resultado-previas'), 150);
+      return { ok: true };
+    },
+    [session]
+  );
+
+  const handleRecoverSession = useCallback(
+    async (accessCode: string): Promise<{ ok: boolean; error?: string }> => {
+      const res = await fetch('/api/sessions/recover', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accessCode }),
+      });
+
+      const data = (await res.json()) as SessionPublicView & { error?: string };
+      if (!res.ok) {
+        return { ok: false, error: data.error ?? 'Código não localizado.' };
+      }
+
+      setSession(data);
+      persistCredentials(data);
+      return { ok: true };
+    },
+    []
+  );
+
+  const handleDeleteSessionMedia = useCallback(async () => {
+    if (!session) return;
+    const res = await fetch(
+      `/api/sessions/${session.sessionId}/media?token=${encodeURIComponent(session.sessionToken)}`,
+      { method: 'DELETE' }
+    );
+    if (res.ok) {
+      const data = (await res.json()) as { session?: SessionPublicView };
+      if (data.session) {
+        setSession(data.session);
+      }
+    }
+  }, [session]);
+
+  const handleSelectPackage = useCallback(
+    async (packageId: PackageId) => {
+      if (!session) return;
+      setCreatingOrderPackageId(packageId);
+      try {
+        const res = await fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId: session.sessionId,
+            token: session.sessionToken,
+            packageId,
+          }),
+        });
+        const data = (await res.json()) as {
+          order?: OrderPublicView;
+          session?: SessionPublicView;
+        };
+        if (res.ok && data.session) {
+          setSession(data.session);
+        }
+      } finally {
+        setCreatingOrderPackageId(null);
+      }
+    },
+    [session]
+  );
+
+  const handleRefreshOrderStatus = useCallback(
+    async (orderId: string) => {
+      if (!session) return;
+      setCheckingOrder(true);
+      try {
+        const res = await fetch(
+          `/api/orders/${orderId}?token=${encodeURIComponent(session.sessionToken)}`
+        );
+        if (res.ok) {
+          const data = (await res.json()) as { session?: SessionPublicView };
+          if (data.session) {
+            setSession(data.session);
+            if (data.session.activeOrder?.status === 'paid') {
+              setTimeout(() => scrollToSection('ensaio-pronto'), 150);
+            }
+          }
+        }
+      } finally {
+        setCheckingOrder(false);
+      }
+    },
+    [session]
+  );
+
+  const handleDemoConfirmOrder = useCallback(
+    async (orderId: string) => {
+      if (!session) return;
+      setCheckingOrder(true);
+      try {
+        const res = await fetch(`/api/orders/${orderId}/demo-confirm`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: session.sessionToken }),
+        });
+        if (res.ok) {
+          const data = (await res.json()) as { session?: SessionPublicView };
+          if (data.session) {
+            setSession(data.session);
+            setTimeout(() => scrollToSection('ensaio-pronto'), 150);
+          }
+        }
+      } finally {
+        setCheckingOrder(false);
+      }
+    },
+    [session]
+  );
+
+  const handleUpdateUnlockedSelection = useCallback(
+    async (orderId: string, photoIds: string[]) => {
+      if (!session) return;
+      const res = await fetch(`/api/orders/${orderId}/select-photos`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token: session.sessionToken,
+          photoIds,
+        }),
+      });
+      if (res.ok) {
+        const data = (await res.json()) as { session?: SessionPublicView };
+        if (data.session) {
+          setSession(data.session);
+        }
+      }
+    },
+    [session]
+  );
+
+  const hasSessionMedia = Boolean(
+    session && (session.hasUploadedPhoto || session.generatedPhotos.length > 0)
+  );
+
   return (
-    <div className="min-h-[100dvh] h-[100dvh] w-full bg-zinc-950 flex flex-col items-center justify-center overflow-hidden relative">
-      
-      {/* SELETOR DE MODO (visível apenas fora da batalha em telas maiores para alternar entre Android e Tela Cheia) */}
-      {!isFightScreen && (
-        <div className="hidden md:flex absolute top-2 right-3 z-50 items-center gap-1 bg-zinc-900/90 backdrop-blur-md border border-zinc-800 rounded-full p-1 shadow-lg">
-          <button
-            onClick={toggleScreenMode}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${
-              screenMode === 'mobile'
-                ? 'bg-emerald-600 text-white shadow-sm'
-                : 'text-zinc-400 hover:text-white'
-            }`}
-            title="Tamanho ideal para celular Android"
-          >
-            <Smartphone className="w-3.5 h-3.5" />
-            <span>📱 Celular Android</span>
-          </button>
+    <div className="min-h-screen flex flex-col bg-[#F5EFE8] text-[#51433E]">
+      <Navbar onStartCreation={() => scrollToSection('criar-ensaio')} />
 
-          <button
-            onClick={toggleScreenMode}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${
-              screenMode === 'fullscreen'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-zinc-400 hover:text-white'
-            }`}
-            title="Modo Tela Cheia"
-          >
-            <Monitor className="w-3.5 h-3.5" />
-            <span>🖥️ Tela Cheia</span>
-          </button>
-        </div>
-      )}
+      <main className="flex-1">
+        <HeroSection
+          onStartCreation={() => scrollToSection('criar-ensaio')}
+          onRecoverSessionClick={() => setRecoverModalOpen(true)}
+        />
 
-      {/* CONTÊINER DO JOGO: HORIZONTAL / LANDSCAPE 16:9 AUTOMÁTICO DURANTE A LUTA */}
-      <div
-        className={`w-full h-full flex flex-col transition-all duration-300 overflow-hidden ${
-          isFightScreen
-            ? 'w-full h-full max-w-[1920px] max-h-[1080px] mx-auto aspect-[16/9] shadow-2xl relative bg-zinc-950'
-            : screenMode === 'mobile'
-            ? 'md:max-w-[430px] md:max-h-[920px] md:h-[96vh] md:rounded-[40px] md:border-[8px] md:border-zinc-800 md:shadow-[0_0_50px_rgba(0,0,0,0.8)] md:relative'
-            : 'max-w-none'
-        }`}
-      >
-        {/* Notch sutil simulado apenas no modo celular fora da batalha */}
-        {screenMode === 'mobile' && !isFightScreen && (
-          <div className="hidden md:block absolute top-2 left-1/2 -translate-x-1/2 w-28 h-4 bg-zinc-900 rounded-full z-50 pointer-events-none" />
+        <ExampleGallerySection onStartCreation={() => scrollToSection('criar-ensaio')} />
+
+        <StudioWorkflow
+          session={session}
+          isCreatingSession={isCreatingSession}
+          activeImageProvider={activeImageProvider}
+          onUploadPhoto={handleUploadPhoto}
+          onGeneratePhotos={handleGeneratePhotos}
+          onRecoverSession={handleRecoverSession}
+          onDeleteSessionMedia={handleDeleteSessionMedia}
+          recoverModalOpen={recoverModalOpen}
+          onCloseRecoverModal={() => setRecoverModalOpen(false)}
+          onOpenRecoverModal={() => setRecoverModalOpen(true)}
+        />
+
+        {session?.activeOrder?.status !== 'paid' && (
+          <WatermarkedResultSection
+            session={session}
+            onScrollToPackages={() => scrollToSection('pacotes')}
+          />
         )}
 
-        {/* Conteúdo da Tela Atual */}
-        <div className="w-full h-full flex flex-col flex-1 overflow-hidden">
-          {renderScreen()}
-        </div>
-      </div>
+        <PricingPackagesSection
+          session={session}
+          creatingOrderPackageId={creatingOrderPackageId}
+          checkingOrder={checkingOrder}
+          onSelectPackage={handleSelectPackage}
+          onRefreshOrderStatus={handleRefreshOrderStatus}
+          onDemoConfirmOrder={handleDemoConfirmOrder}
+        />
 
+        <SuccessGallerySection
+          session={session}
+          onUpdateUnlockedSelection={handleUpdateUnlockedSelection}
+        />
+      </main>
+
+      <FaqAndFooter
+        hasSessionMedia={hasSessionMedia}
+        retentionHours={retentionHours}
+        onDeleteMedia={handleDeleteSessionMedia}
+        onOpenAdmin={() => setAdminModalOpen(true)}
+      />
+
+      <AdminPanelModal open={adminModalOpen} onClose={() => setAdminModalOpen(false)} />
     </div>
   );
 }
