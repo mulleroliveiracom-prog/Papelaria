@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 import { GoogleGenAI, Type } from '@google/genai';
 import { SCENARIOS, type ScenarioDefinition } from '../src/types/studio.ts';
@@ -42,17 +43,23 @@ interface ImageEditingProvider {
 }
 
 function getScenarioReferenceImageBuffer(scenario: ScenarioDefinition): Buffer | null {
-  const refPath = path.resolve(
-    process.cwd(),
-    'src',
-    'assets',
-    'images',
-    scenario.referenceImageFilename
-  );
-  if (!fs.existsSync(refPath)) {
-    return null;
+  const candidates = [
+    path.resolve(process.cwd(), 'src', 'assets', 'images', scenario.referenceImageFilename),
+    path.resolve(
+      path.dirname(fileURLToPath(import.meta.url)),
+      '..',
+      'src',
+      'assets',
+      'images',
+      scenario.referenceImageFilename
+    ),
+  ];
+  for (const refPath of candidates) {
+    if (fs.existsSync(refPath)) {
+      return fs.readFileSync(refPath);
+    }
   }
-  return fs.readFileSync(refPath);
+  return null;
 }
 
 function sleep(ms: number): Promise<void> {

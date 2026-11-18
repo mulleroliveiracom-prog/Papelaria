@@ -5,7 +5,6 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import express from 'express';
 import JSZip from 'jszip';
-import { createServer as createViteServer } from 'vite';
 import {
   appendGenerationLog,
   createSession,
@@ -80,15 +79,15 @@ function getBearerOrQueryToken(req: express.Request): string | undefined {
   return typeof q === 'string' ? q.trim() : undefined;
 }
 
-async function startServer() {
+export function createApiApp(): express.Express {
   const app = express();
   app.use(express.json({ limit: '16mb' }));
 
-  // Run periodic expiration cleanup on startup and every 30 minutes
-  purgeExpiredMedia();
-  setInterval(() => {
+  try {
     purgeExpiredMedia();
-  }, 30 * 60 * 1000).unref();
+  } catch {
+    // Non-fatal on cold serverless start if /tmp is fresh
+  }
 
   // --- Health & Public Integration Capability Check ---
   app.get('/api/health', (_req, res) => {
@@ -698,7 +697,19 @@ async function startServer() {
   // Suppress unused import warning if any
   void appendGenerationLog;
 
+  return app;
+}
+
+async function startStandaloneServer() {
+  const app = createApiApp();
+
+  // Run periodic expiration cleanup every 30 minutes in long-lived server mode
+  setInterval(() => {
+    purgeExpiredMedia();
+  }, 30 * 60 * 1000).unref();
+
   if (process.env.NODE_ENV !== 'production') {
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
@@ -718,7 +729,9 @@ async function startServer() {
   });
 }
 
-startServer().catch((err) => {
-  console.error('Failed to start server:', err);
-  process.exit(1);
-});
+if (!process.env.VERCEL && !process.env.VERCEL_ENV) {
+  startStandaloneServer().catch((err) => {
+    console.error('Failed to start server:', err);
+    process.exit(1);
+  });
+}

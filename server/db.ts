@@ -11,7 +11,10 @@ import type {
 } from '../src/types/studio.ts';
 import { PACKAGES } from '../src/types/studio.ts';
 
-export const PRIVATE_ROOT = path.resolve(process.cwd(), '.private_data');
+const IS_VERCEL = Boolean(process.env.VERCEL || process.env.VERCEL_ENV);
+export const PRIVATE_ROOT = IS_VERCEL
+  ? path.join('/tmp', 'meu-bebe-em-um-sonho-data')
+  : path.resolve(process.cwd(), '.private_data');
 export const UPLOADS_DIR = path.join(PRIVATE_ROOT, 'uploads');
 export const ORIGINALS_DIR = path.join(PRIVATE_ROOT, 'originals');
 export const PREVIEWS_DIR = path.join(PRIVATE_ROOT, 'previews');
