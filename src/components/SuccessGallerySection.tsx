@@ -109,13 +109,16 @@ export function SuccessGallerySection({
           {session.generatedPhotos.map((photo) => {
             const isUnlocked = unlockedIds.has(photo.photoId);
             const isPicked = selectedIds.includes(photo.photoId);
+            const fallbackPreviewUrl =
+              photo.previewDataUrl ??
+              `/api/media/preview/${session.sessionId}/${photo.photoId}?token=${encodeURIComponent(
+                session.sessionToken
+              )}`;
             const imageUrl = isUnlocked
               ? `/api/media/original/${session.sessionId}/${photo.photoId}?token=${encodeURIComponent(
                   session.sessionToken
                 )}`
-              : `/api/media/preview/${session.sessionId}/${photo.photoId}?token=${encodeURIComponent(
-                  session.sessionToken
-                )}`;
+              : fallbackPreviewUrl;
             const downloadUrl = `/api/media/original/${session.sessionId}/${photo.photoId}?token=${encodeURIComponent(
               session.sessionToken
             )}&download=1`;
@@ -136,6 +139,12 @@ export function SuccessGallerySection({
                     src={imageUrl}
                     alt={photo.scenarioTitle}
                     referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      const img = e.currentTarget;
+                      if (photo.previewDataUrl && img.src !== photo.previewDataUrl) {
+                        img.src = photo.previewDataUrl;
+                      }
+                    }}
                     className="w-full h-full object-cover"
                   />
                   <span

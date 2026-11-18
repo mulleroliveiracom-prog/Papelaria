@@ -14,6 +14,7 @@ export interface GenerationScenarioSuccess {
   scenarioTitle: string;
   originalPath: string;
   previewPath: string;
+  previewDataUrl: string;
   createdAt: string;
 }
 
@@ -526,10 +527,12 @@ function resolveActiveProvider(): ImageEditingProvider | null {
 
 export async function generateNewbornPhotosWithAI(
   sessionId: string,
-  uploadedPhotoPath: string,
-  scenarioIds: string[]
+  uploadedPhotoPath: string | undefined,
+  scenarioIds: string[],
+  directSubjectBuffer?: Buffer
 ): Promise<GenerationBatchResult> {
-  if (!fs.existsSync(uploadedPhotoPath)) {
+  const hasFile = Boolean(uploadedPhotoPath && fs.existsSync(uploadedPhotoPath));
+  if (!directSubjectBuffer && !hasFile) {
     return {
       ok: false,
       generated: [],
@@ -561,7 +564,7 @@ export async function generateNewbornPhotosWithAI(
     };
   }
 
-  const subjectBuffer = fs.readFileSync(uploadedPhotoPath);
+  const subjectBuffer = directSubjectBuffer ?? fs.readFileSync(uploadedPhotoPath!);
   const geminiApiKey = process.env.GEMINI_API_KEY?.trim();
 
   // Step 1: Analyze uploaded photograph first (human baby vs. animal + visual traits)
@@ -641,11 +644,8 @@ export async function generateNewbornPhotosWithAI(
       });
 
       const photoId = crypto.randomUUID();
-      const { originalPath, previewPath } = await saveOriginalAndWatermarkedPreview(
-        sessionId,
-        photoId,
-        outputBuffer
-      );
+      const { originalPath, previewPath, previewDataUrl } =
+        await saveOriginalAndWatermarkedPreview(sessionId, photoId, outputBuffer);
 
       const createdAt = new Date().toISOString();
       generated.push({
@@ -654,6 +654,7 @@ export async function generateNewbornPhotosWithAI(
         scenarioTitle: scenario.title,
         originalPath,
         previewPath,
+        previewDataUrl,
         createdAt,
       });
 

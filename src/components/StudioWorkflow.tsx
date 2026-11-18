@@ -17,6 +17,9 @@ interface StudioWorkflowProps {
   session: SessionPublicView | null;
   isCreatingSession: boolean;
   activeImageProvider: 'cloudflare-workers-ai' | 'google-genai' | 'unconfigured';
+  uploadedPhotoBase64?: string | null;
+  selectedScenariosState?: string[];
+  onSelectedScenariosChange?: (scenarioIds: string[]) => void;
   onUploadPhoto: (consentAccepted: boolean, imageBase64: string) => Promise<void>;
   onGeneratePhotos: (scenarioIds: string[]) => Promise<{ ok: boolean; error?: string }>;
   onRecoverSession: (accessCode: string) => Promise<{ ok: boolean; error?: string }>;
@@ -73,6 +76,9 @@ export function StudioWorkflow({
   session,
   isCreatingSession,
   activeImageProvider,
+  uploadedPhotoBase64,
+  selectedScenariosState,
+  onSelectedScenariosChange,
   onUploadPhoto,
   onGeneratePhotos,
   onRecoverSession,
@@ -88,11 +94,20 @@ export function StudioWorkflow({
   const [consentAccepted, setConsentAccepted] = useState<boolean>(
     Boolean(session?.consentAccepted)
   );
-  const [selectedScenarios, setSelectedScenarios] = useState<string[]>(
-    session?.selectedScenarioIds?.length
-      ? session.selectedScenarioIds
-      : ['ursinho-dos-sonhos', 'nuvem-de-algodao']
+  const [selectedScenariosInternal, setSelectedScenariosInternal] = useState<string[]>(
+    selectedScenariosState?.length
+      ? selectedScenariosState
+      : session?.selectedScenarioIds?.length
+        ? session.selectedScenarioIds
+        : ['ursinho-dos-sonhos', 'nuvem-de-algodao']
   );
+  const selectedScenarios = selectedScenariosState ?? selectedScenariosInternal;
+  const updateSelectedScenarios = (updater: (prev: string[]) => string[]) => {
+    const next = updater(selectedScenarios);
+    setSelectedScenariosInternal(next);
+    onSelectedScenariosChange?.(next);
+  };
+
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
@@ -113,9 +128,10 @@ export function StudioWorkflow({
       setConsentAccepted(true);
     }
     if (session?.selectedScenarioIds && session.selectedScenarioIds.length > 0) {
-      setSelectedScenarios(session.selectedScenarioIds);
+      setSelectedScenariosInternal(session.selectedScenarioIds);
+      onSelectedScenariosChange?.(session.selectedScenarioIds);
     }
-  }, [session?.consentAccepted, session?.selectedScenarioIds]);
+  }, [session?.consentAccepted, session?.selectedScenarioIds, onSelectedScenariosChange]);
 
   useEffect(() => {
     if (!generating) return;
@@ -128,7 +144,7 @@ export function StudioWorkflow({
   const paidOrder = session?.activeOrder?.status === 'paid' ? session.activeOrder : null;
   const maxSelectableScenarios = paidOrder ? Math.max(3, paidOrder.quota) : 3;
 
-  const hasPhotoReady = Boolean(session?.hasUploadedPhoto || localPreview);
+  const hasPhotoReady = Boolean(session?.hasUploadedPhoto || localPreview || uploadedPhotoBase64);
   const hasGenerated = Boolean(session && session.generatedPhotos.length > 0);
   const currentStep = generating ? 3 : hasGenerated ? 3 : hasPhotoReady && consentAccepted ? 2 : 1;
 
@@ -137,7 +153,7 @@ export function StudioWorkflow({
       ? `/api/media/upload/${session.sessionId}?token=${encodeURIComponent(session.sessionToken)}&v=${encodeURIComponent(session.consentTimestamp ?? '1')}`
       : null;
 
-  const displayPreviewSrc = localPreview ?? serverUploadUrl;
+  const displayPreviewSrc = localPreview ?? uploadedPhotoBase64 ?? serverUploadUrl;
 
   const handleFilePicked = async (file: File | undefined) => {
     if (!file) return;
@@ -165,7 +181,7 @@ export function StudioWorkflow({
 
   const toggleScenario = (scenarioId: string) => {
     setGenerationError(null);
-    setSelectedScenarios((prev) => {
+    updateSelectedScenarios((prev) => {
       if (prev.includes(scenarioId)) {
         return prev.filter((id) => id !== scenarioId);
       }

@@ -6,9 +6,11 @@ import crypto from 'node:crypto';
 import express from 'express';
 import JSZip from 'jszip';
 import {
+  IS_VERCEL,
   appendGenerationLog,
   createSession,
   deleteSessionMediaFiles,
+  generateAccessCode,
   getAdminDashboardData,
   getIntegrationStatus,
   getOrderById,
@@ -24,11 +26,12 @@ import {
   updateOrder,
   updateRuntimeConfig,
   updateSession,
+  upsertSession,
   verifyAdminToken,
   type StoredOrder,
   type StoredSession,
 } from './server/db.ts';
-import { saveSanitizedUpload } from './server/watermark.ts';
+import { sanitizeUploadBuffer, saveSanitizedUpload } from './server/watermark.ts';
 import { generateNewbornPhotosWithAI } from './server/ai.ts';
 import { createCheckoutForOrder, verifyWebhookSignature } from './server/payments.ts';
 import { PACKAGES, type PackageId, type SessionPublicView } from './src/types/studio.ts';
@@ -41,7 +44,10 @@ function getAppBaseUrl(req: express.Request): string {
   return `${proto}://${host}`;
 }
 
-function buildSessionPublicView(session: StoredSession): SessionPublicView {
+function buildSessionPublicView(
+  session: StoredSession,
+  previewDataUrlMap?: Map<string, string>
+): SessionPublicView {
   const orders = getOrdersForSession(session.sessionId);
   const paidOrder = orders.find((o) => o.status === 'paid') ?? null;
   const latestOrder = paidOrder ?? orders[0] ?? null;
@@ -57,13 +63,17 @@ function buildSessionPublicView(session: StoredSession): SessionPublicView {
       session.uploadedPhotoPath && fs.existsSync(session.uploadedPhotoPath)
     ),
     selectedScenarioIds: session.selectedScenarioIds,
-    generatedPhotos: session.generatedPhotos.map((p) => ({
-      photoId: p.photoId,
-      scenarioId: p.scenarioId,
-      scenarioTitle: p.scenarioTitle,
-      createdAt: p.createdAt,
-      unlocked: unlockedSet.has(p.photoId),
-    })),
+    generatedPhotos: session.generatedPhotos.map((p) => {
+      const previewDataUrl = previewDataUrlMap?.get(p.photoId);
+      return {
+        photoId: p.photoId,
+        scenarioId: p.scenarioId,
+        scenarioTitle: p.scenarioTitle,
+        createdAt: p.createdAt,
+        unlocked: unlockedSet.has(p.photoId),
+        ...(previewDataUrl ? { previewDataUrl } : {}),
+      };
+    }),
     activeOrder: latestOrder ? toOrderPublicView(latestOrder) : null,
     expiresAt: session.expiresAt,
     createdAt: session.createdAt,
@@ -141,7 +151,21 @@ export function createApiApp(): express.Express {
     const consentAccepted = Boolean(req.body?.consentAccepted);
     const imageBase64Raw = String(req.body?.imageBase64 ?? '');
 
-    const session = getSession(req.params.sessionId);
+    let session = getSession(req.params.sessionId);
+    if (!session && IS_VERCEL && token) {
+      const now = new Date();
+      session = upsertSession({
+        sessionId: req.params.sessionId,
+        accessCode: generateAccessCode(),
+        sessionToken: token,
+        consentAccepted,
+        selectedScenarioIds: [],
+        generatedPhotos: [],
+        expiresAt: new Date(now.getTime() + 168 * 3600 * 1000).toISOString(),
+        createdAt: now.toISOString(),
+        updatedAt: now.toISOString(),
+      });
+    }
     if (!session || session.sessionToken !== token) {
       res.status(401).json({ error: 'Sessão não autorizada.' });
       return;
@@ -200,23 +224,90 @@ export function createApiApp(): express.Express {
     res.sendFile(session.uploadedPhotoPath);
   });
 
-  // --- Real AI Photo Generation ---
+  // --- Real AI Photo Generation (Supports both persisted session and stateless Vercel imageBase64 payload) ---
   app.post('/api/sessions/:sessionId/generate', async (req, res) => {
     const token = String(req.body?.token ?? getBearerOrQueryToken(req) ?? '');
     const scenarioIds = Array.isArray(req.body?.scenarioIds)
       ? req.body.scenarioIds.map(String)
       : [];
+    const imageBase64Raw = typeof req.body?.imageBase64 === 'string' ? req.body.imageBase64 : '';
+    const consentFromBody = req.body?.consentAccepted !== false;
 
-    const session = getSession(req.params.sessionId);
-    if (!session || session.sessionToken !== token) {
+    let session = getSession(req.params.sessionId);
+
+    // If session already exists in local storage or warm /tmp, enforce strict token match
+    if (session && session.sessionToken !== token) {
       res.status(401).json({ error: 'Sessão não autorizada.' });
       return;
     }
-    if (!session.consentAccepted || !session.uploadedPhotoPath) {
-      res.status(400).json({
-        error: 'Envie a fotografia com autorização do responsável antes de gerar o ensaio.',
+
+    let directSubjectBuffer: Buffer | undefined;
+
+    if (imageBase64Raw) {
+      const base64Clean = imageBase64Raw.replace(/^data:image\/[a-zA-Z0-9+.-]+;base64,/, '');
+      if (base64Clean && base64Clean.length >= 100) {
+        try {
+          const rawBuf = Buffer.from(base64Clean, 'base64');
+          if (rawBuf.byteLength > 12 * 1024 * 1024) {
+            res.status(400).json({ error: 'A imagem deve ter no máximo 12 MB.' });
+            return;
+          }
+          directSubjectBuffer = await sanitizeUploadBuffer(rawBuf);
+        } catch {
+          res.status(400).json({
+            error: 'Não foi possível ler o arquivo de imagem enviado. Tente selecionar a foto novamente.',
+          });
+          return;
+        }
+      }
+    }
+
+    // Stateless Vercel recovery: if session doesn't exist in this Lambda's /tmp, reconstruct it cleanly from imageBase64
+    if (!session) {
+      if (!directSubjectBuffer || !consentFromBody) {
+        res.status(400).json({
+          error: 'Envie a fotografia com autorização do responsável antes de gerar o ensaio.',
+        });
+        return;
+      }
+
+      const now = new Date();
+      const targetSessionId =
+        req.params.sessionId && req.params.sessionId !== 'stateless'
+          ? req.params.sessionId
+          : crypto.randomUUID();
+      const targetToken = token || crypto.randomBytes(24).toString('hex');
+      const savedPath = await saveSanitizedUpload(targetSessionId, directSubjectBuffer);
+
+      session = upsertSession({
+        sessionId: targetSessionId,
+        accessCode: generateAccessCode(),
+        sessionToken: targetToken,
+        consentAccepted: true,
+        consentTimestamp: now.toISOString(),
+        uploadedPhotoPath: savedPath,
+        selectedScenarioIds: scenarioIds,
+        generatedPhotos: [],
+        expiresAt: new Date(now.getTime() + 168 * 3600 * 1000).toISOString(),
+        createdAt: now.toISOString(),
+        updatedAt: now.toISOString(),
       });
-      return;
+    } else if (!session.consentAccepted || (!session.uploadedPhotoPath && !directSubjectBuffer)) {
+      if (directSubjectBuffer && consentFromBody) {
+        const savedPath = await saveSanitizedUpload(session.sessionId, directSubjectBuffer);
+        session =
+          updateSession(session.sessionId, (curr) => ({
+            ...curr,
+            consentAccepted: true,
+            consentTimestamp: curr.consentTimestamp ?? new Date().toISOString(),
+            uploadedPhotoPath: savedPath,
+          })) ?? session;
+      } else {
+        res.status(400).json({
+          error: 'Envie a fotografia com autorização do responsável antes de gerar o ensaio.',
+        });
+        return;
+      }
     }
 
     const orders = getOrdersForSession(session.sessionId);
@@ -238,15 +329,28 @@ export function createApiApp(): express.Express {
     const result = await generateNewbornPhotosWithAI(
       session.sessionId,
       session.uploadedPhotoPath,
-      scenarioIds
+      scenarioIds,
+      directSubjectBuffer
     );
+
+    const previewDataUrlMap = new Map<string, string>();
+    for (const item of result.generated) {
+      if (item.previewDataUrl) {
+        previewDataUrlMap.set(item.photoId, item.previewDataUrl);
+      }
+    }
 
     if (result.generated.length > 0) {
       updateSession(session.sessionId, (curr) => ({
         ...curr,
-        generatedPhotos: [...curr.generatedPhotos, ...result.generated],
+        generatedPhotos: [
+          ...curr.generatedPhotos,
+          ...result.generated.map(({ previewDataUrl: _omit, ...stored }) => stored),
+        ],
       }));
     }
+
+    const latestSession = getSession(session.sessionId) ?? session;
 
     if (!result.ok) {
       const statusCode =
@@ -256,12 +360,12 @@ export function createApiApp(): express.Express {
       res.status(statusCode).json({
         error: result.errorMessage,
         errorCode: result.errorCode,
-        session: buildSessionPublicView(getSession(session.sessionId)!),
+        session: buildSessionPublicView(latestSession, previewDataUrlMap),
       });
       return;
     }
 
-    res.json(buildSessionPublicView(getSession(session.sessionId)!));
+    res.json(buildSessionPublicView(latestSession, previewDataUrlMap));
   });
 
   // --- Watermarked Preview Delivery (Token-Authenticated, Never High-Res Unwatermarked) ---
@@ -376,7 +480,37 @@ export function createApiApp(): express.Express {
     const sessionId = String(req.body?.sessionId ?? '');
     const packageId = String(req.body?.packageId ?? '') as PackageId;
 
-    const session = getSession(sessionId);
+    let session = getSession(sessionId);
+    if (!session && IS_VERCEL && sessionId && token) {
+      const now = new Date();
+      const clientPhotos = Array.isArray(req.body?.generatedPhotos)
+        ? req.body.generatedPhotos
+            .filter((p: unknown): p is { photoId: string; scenarioId: string; scenarioTitle: string; createdAt?: string } =>
+              Boolean(p && typeof p === 'object' && 'photoId' in p)
+            )
+            .map((p: { photoId: string; scenarioId: string; scenarioTitle: string; createdAt?: string }) => ({
+              photoId: String(p.photoId),
+              scenarioId: String(p.scenarioId || ''),
+              scenarioTitle: String(p.scenarioTitle || ''),
+              originalPath: '',
+              previewPath: '',
+              createdAt: String(p.createdAt || now.toISOString()),
+            }))
+        : [];
+      session = upsertSession({
+        sessionId,
+        accessCode: generateAccessCode(),
+        sessionToken: token,
+        consentAccepted: true,
+        consentTimestamp: now.toISOString(),
+        selectedScenarioIds: [],
+        generatedPhotos: clientPhotos,
+        expiresAt: new Date(now.getTime() + 168 * 3600 * 1000).toISOString(),
+        createdAt: now.toISOString(),
+        updatedAt: now.toISOString(),
+      });
+    }
+
     if (!session || session.sessionToken !== token) {
       res.status(401).json({ error: 'Sessão não autorizada.' });
       return;
@@ -495,22 +629,65 @@ export function createApiApp(): express.Express {
     }
 
     const token = String(req.body?.token ?? getBearerOrQueryToken(req) ?? '');
-    const order = getOrderById(req.params.orderId);
+    let order = getOrderById(req.params.orderId);
+    let session = order ? getSession(order.sessionId) : null;
+
+    if (!order && IS_VERCEL && req.body?.sessionId && token) {
+      const sid = String(req.body.sessionId);
+      const pkgId = String(req.body?.packageId ?? 'pequena-recordacao') as PackageId;
+      const pkg = PACKAGES.find((p) => p.id === pkgId) ?? PACKAGES[0];
+      const now = new Date();
+      session =
+        getSession(sid) ??
+        upsertSession({
+          sessionId: sid,
+          accessCode: generateAccessCode(),
+          sessionToken: token,
+          consentAccepted: true,
+          consentTimestamp: now.toISOString(),
+          selectedScenarioIds: [],
+          generatedPhotos: [],
+          expiresAt: new Date(now.getTime() + 168 * 3600 * 1000).toISOString(),
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+        });
+      order = {
+        orderId: req.params.orderId,
+        sessionId: session.sessionId,
+        accessCode: session.accessCode,
+        packageId: pkg.id,
+        packageName: pkg.name,
+        amountCents: pkg.priceCents,
+        quota: pkg.photoCount,
+        status: 'pending',
+        paymentProvider: 'modo_demonstrativo',
+        providerConfigured: false,
+        unlockedPhotoIds: [],
+        createdAt: now.toISOString(),
+      };
+      saveOrder(order);
+    }
+
     if (!order) {
       res.status(404).json({ error: 'Pedido não encontrado.' });
       return;
     }
 
-    const session = getSession(order.sessionId);
     if (!session || session.sessionToken !== token) {
       res.status(401).json({ error: 'Sessão não autorizada.' });
       return;
     }
 
+    const requestedIds = Array.isArray(req.body?.selectedPhotoIds)
+      ? req.body.selectedPhotoIds.map(String)
+      : [];
+
     const autoUnlockIds =
       order.unlockedPhotoIds.length > 0
         ? order.unlockedPhotoIds.slice(0, order.quota)
-        : session.generatedPhotos.slice(0, order.quota).map((p) => p.photoId);
+        : session.generatedPhotos.length > 0
+          ? session.generatedPhotos.slice(0, order.quota).map((p) => p.photoId)
+          : requestedIds.slice(0, order.quota);
 
     const updated = updateOrder(order.orderId, (curr) => ({
       ...curr,

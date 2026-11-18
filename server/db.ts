@@ -11,7 +11,7 @@ import type {
 } from '../src/types/studio.ts';
 import { PACKAGES } from '../src/types/studio.ts';
 
-const IS_VERCEL = Boolean(process.env.VERCEL || process.env.VERCEL_ENV);
+export const IS_VERCEL = Boolean(process.env.VERCEL || process.env.VERCEL_ENV);
 export const PRIVATE_ROOT = IS_VERCEL
   ? path.join('/tmp', 'meu-bebe-em-um-sonho-data')
   : path.resolve(process.cwd(), '.private_data');
@@ -173,6 +173,17 @@ export function createSession(): StoredSession {
     updatedAt: now.toISOString(),
   };
 
+  db.sessions[session.sessionId] = session;
+  writeDb(db);
+  return session;
+}
+
+export function upsertSession(session: StoredSession): StoredSession {
+  const db = readDb();
+  const existing = db.sessions[session.sessionId];
+  if (existing) {
+    return existing;
+  }
   db.sessions[session.sessionId] = session;
   writeDb(db);
   return session;

@@ -31,6 +31,7 @@ export interface GeneratedPhotoMeta {
   scenarioTitle: string;
   createdAt: string;
   unlocked: boolean;
+  previewDataUrl?: string;
 }
 
 export type OrderStatus = 'pending' | 'paid' | 'failed' | 'expired';

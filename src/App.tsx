@@ -17,6 +17,31 @@ interface SavedSessionCredentials {
   sessionToken: string;
 }
 
+function mergeSessionPreviews(
+  prev: SessionPublicView | null,
+  next: SessionPublicView
+): SessionPublicView {
+  if (!prev || prev.generatedPhotos.length === 0) {
+    return next;
+  }
+  const prevPreviewById = new Map<string, string>();
+  for (const photo of prev.generatedPhotos) {
+    if (photo.previewDataUrl) {
+      prevPreviewById.set(photo.photoId, photo.previewDataUrl);
+    }
+  }
+  if (prevPreviewById.size === 0) {
+    return next;
+  }
+  return {
+    ...next,
+    generatedPhotos: next.generatedPhotos.map((photo) => ({
+      ...photo,
+      previewDataUrl: photo.previewDataUrl ?? prevPreviewById.get(photo.photoId),
+    })),
+  };
+}
+
 export function App() {
   const [session, setSession] = useState<SessionPublicView | null>(null);
   const [isCreatingSession, setIsCreatingSession] = useState(true);
@@ -24,6 +49,14 @@ export function App() {
   const [activeImageProvider, setActiveImageProvider] = useState<
     'cloudflare-workers-ai' | 'google-genai' | 'unconfigured'
   >('unconfigured');
+
+  // Stateless browser memory for uploaded photo (base64) and selected scenarios (essential for Vercel serverless)
+  const [uploadedPhotoBase64, setUploadedPhotoBase64] = useState<string | null>(null);
+  const [uploadedConsent, setUploadedConsent] = useState(false);
+  const [selectedScenarios, setSelectedScenarios] = useState<string[]>([
+    'ursinho-dos-sonhos',
+    'nuvem-de-algodao',
+  ]);
 
   const [creatingOrderPackageId, setCreatingOrderPackageId] = useState<PackageId | null>(null);
   const [checkingOrder, setCheckingOrder] = useState(false);
@@ -49,9 +82,11 @@ export function App() {
       const res = await fetch('/api/sessions', { method: 'POST' });
       if (!res.ok) return null;
       const created = (await res.json()) as SessionPublicView;
-      setSession(created);
+      setSession((prev) => mergeSessionPreviews(prev, created));
       persistCredentials(created);
       return created;
+    } catch {
+      return null;
     } finally {
       setIsCreatingSession(false);
     }
@@ -89,6 +124,9 @@ export function App() {
               const restored = (await res.json()) as SessionPublicView;
               if (!cancelled) {
                 setSession(restored);
+                if (restored.selectedScenarioIds?.length) {
+                  setSelectedScenarios(restored.selectedScenarioIds);
+                }
                 setIsCreatingSession(false);
               }
               return;
@@ -119,9 +157,14 @@ export function App() {
 
   const handleUploadPhoto = useCallback(
     async (consentAccepted: boolean, imageBase64: string) => {
+      // Always store in browser memory so stateless /generate works even across Vercel Lambda cold starts
+      setUploadedPhotoBase64(imageBase64);
+      setUploadedConsent(consentAccepted);
+
       const activeSession = session ?? (await createFreshSession());
       if (!activeSession) {
-        throw new Error('Não foi possível iniciar sua sessão.');
+        // Still allow proceeding statelessly via /api/sessions/stateless/generate
+        return;
       }
 
       const res = await fetch(`/api/sessions/${activeSession.sessionId}/upload`, {
@@ -138,7 +181,7 @@ export function App() {
       if (!res.ok) {
         throw new Error(data.error ?? 'Erro ao enviar fotografia.');
       }
-      setSession(data);
+      setSession((prev) => mergeSessionPreviews(prev, data));
       persistCredentials(data);
     },
     [session, createFreshSession]
@@ -146,16 +189,31 @@ export function App() {
 
   const handleGeneratePhotos = useCallback(
     async (scenarioIds: string[]): Promise<{ ok: boolean; error?: string }> => {
-      if (!session) {
-        return { ok: false, error: 'Sessão não encontrada.' };
+      setSelectedScenarios(scenarioIds);
+
+      let activeSession = session;
+      if (!activeSession && !uploadedPhotoBase64) {
+        activeSession = await createFreshSession();
+        if (!activeSession) {
+          return { ok: false, error: 'Sessão não encontrada. Selecione a foto novamente.' };
+        }
       }
 
-      const res = await fetch(`/api/sessions/${session.sessionId}/generate`, {
+      const targetSessionId = activeSession?.sessionId ?? 'stateless';
+      const targetToken = activeSession?.sessionToken ?? '';
+
+      const res = await fetch(`/api/sessions/${targetSessionId}/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          token: session.sessionToken,
+          token: targetToken,
           scenarioIds,
+          ...(uploadedPhotoBase64
+            ? {
+                imageBase64: uploadedPhotoBase64,
+                consentAccepted: uploadedConsent || Boolean(activeSession?.consentAccepted),
+              }
+            : {}),
         }),
       });
 
@@ -166,7 +224,9 @@ export function App() {
       if (!res.ok) {
         const errObj = data as { error?: string; session?: SessionPublicView };
         if (errObj.session) {
-          setSession(errObj.session);
+          const recovered = errObj.session;
+          setSession((prev) => mergeSessionPreviews(prev, recovered));
+          persistCredentials(recovered);
         }
         return {
           ok: false,
@@ -175,12 +235,12 @@ export function App() {
       }
 
       const updated = data as SessionPublicView;
-      setSession(updated);
+      setSession((prev) => mergeSessionPreviews(prev, updated));
       persistCredentials(updated);
       setTimeout(() => scrollToSection('resultado-previas'), 150);
       return { ok: true };
     },
-    [session]
+    [session, uploadedPhotoBase64, uploadedConsent, createFreshSession]
   );
 
   const handleRecoverSession = useCallback(
@@ -204,6 +264,8 @@ export function App() {
   );
 
   const handleDeleteSessionMedia = useCallback(async () => {
+    setUploadedPhotoBase64(null);
+    setUploadedConsent(false);
     if (!session) return;
     const res = await fetch(
       `/api/sessions/${session.sessionId}/media?token=${encodeURIComponent(session.sessionToken)}`,
@@ -214,6 +276,16 @@ export function App() {
       if (data.session) {
         setSession(data.session);
       }
+    } else {
+      setSession((prev) =>
+        prev
+          ? {
+              ...prev,
+              hasUploadedPhoto: false,
+              generatedPhotos: [],
+            }
+          : null
+      );
     }
   }, [session]);
 
@@ -222,6 +294,9 @@ export function App() {
       if (!session) return;
       setCreatingOrderPackageId(packageId);
       try {
+        const generatedMetaOnly = session.generatedPhotos.map(
+          ({ previewDataUrl: _omit, ...meta }) => meta
+        );
         const res = await fetch('/api/orders', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -229,6 +304,7 @@ export function App() {
             sessionId: session.sessionId,
             token: session.sessionToken,
             packageId,
+            generatedPhotos: generatedMetaOnly,
           }),
         });
         const data = (await res.json()) as {
@@ -236,7 +312,8 @@ export function App() {
           session?: SessionPublicView;
         };
         if (res.ok && data.session) {
-          setSession(data.session);
+          const updatedSession = data.session;
+          setSession((prev) => mergeSessionPreviews(prev, updatedSession));
         }
       } finally {
         setCreatingOrderPackageId(null);
@@ -256,8 +333,9 @@ export function App() {
         if (res.ok) {
           const data = (await res.json()) as { session?: SessionPublicView };
           if (data.session) {
-            setSession(data.session);
-            if (data.session.activeOrder?.status === 'paid') {
+            const updatedSession = data.session;
+            setSession((prev) => mergeSessionPreviews(prev, updatedSession));
+            if (updatedSession.activeOrder?.status === 'paid') {
               setTimeout(() => scrollToSection('ensaio-pronto'), 150);
             }
           }
@@ -277,12 +355,18 @@ export function App() {
         const res = await fetch(`/api/orders/${orderId}/demo-confirm`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: session.sessionToken }),
+          body: JSON.stringify({
+            token: session.sessionToken,
+            sessionId: session.sessionId,
+            packageId: session.activeOrder?.packageId,
+            selectedPhotoIds: session.generatedPhotos.map((p) => p.photoId),
+          }),
         });
         if (res.ok) {
           const data = (await res.json()) as { session?: SessionPublicView };
           if (data.session) {
-            setSession(data.session);
+            const updatedSession = data.session;
+            setSession((prev) => mergeSessionPreviews(prev, updatedSession));
             setTimeout(() => scrollToSection('ensaio-pronto'), 150);
           }
         }
@@ -307,7 +391,8 @@ export function App() {
       if (res.ok) {
         const data = (await res.json()) as { session?: SessionPublicView };
         if (data.session) {
-          setSession(data.session);
+          const updatedSession = data.session;
+          setSession((prev) => mergeSessionPreviews(prev, updatedSession));
         }
       }
     },
@@ -315,7 +400,8 @@ export function App() {
   );
 
   const hasSessionMedia = Boolean(
-    session && (session.hasUploadedPhoto || session.generatedPhotos.length > 0)
+    uploadedPhotoBase64 ||
+      (session && (session.hasUploadedPhoto || session.generatedPhotos.length > 0))
   );
 
   return (
@@ -334,6 +420,9 @@ export function App() {
           session={session}
           isCreatingSession={isCreatingSession}
           activeImageProvider={activeImageProvider}
+          uploadedPhotoBase64={uploadedPhotoBase64}
+          selectedScenariosState={selectedScenarios}
+          onSelectedScenariosChange={setSelectedScenarios}
           onUploadPhoto={handleUploadPhoto}
           onGeneratePhotos={handleGeneratePhotos}
           onRecoverSession={handleRecoverSession}

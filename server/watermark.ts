@@ -4,10 +4,18 @@ import sharp from 'sharp';
 import { ORIGINALS_DIR, PREVIEWS_DIR, UPLOADS_DIR } from './db.ts';
 
 /**
- * Sanitizes an uploaded baby photograph:
- * - Validates dimensions and format via sharp
- * - Strips all EXIF / GPS / camera metadata for child privacy
- * - Resizes safely to max 1400px edge and stores outside public web root
+ * Strips all EXIF / GPS / camera metadata and normalizes orientation and size in memory.
+ */
+export async function sanitizeUploadBuffer(rawBuffer: Buffer): Promise<Buffer> {
+  return sharp(rawBuffer)
+    .rotate() // honors phone orientation before stripping EXIF
+    .resize(1400, 1400, { fit: 'inside', withoutEnlargement: true })
+    .jpeg({ quality: 90 })
+    .toBuffer();
+}
+
+/**
+ * Sanitizes an uploaded baby photograph and stores outside public web root.
  */
 export async function saveSanitizedUpload(
   sessionId: string,
@@ -18,25 +26,21 @@ export async function saveSanitizedUpload(
   }
 
   const targetPath = path.join(UPLOADS_DIR, `${sessionId}.jpg`);
-
-  await sharp(rawBuffer)
-    .rotate() // honors phone orientation before stripping EXIF
-    .resize(1400, 1400, { fit: 'inside', withoutEnlargement: true })
-    .jpeg({ quality: 90 })
-    .toFile(targetPath);
+  const sanitized = await sanitizeUploadBuffer(rawBuffer);
+  fs.writeFileSync(targetPath, sanitized);
 
   return targetPath;
 }
 
 /**
  * Stores the untouched high-resolution original image strictly inside private server storage
- * and generates a permanently watermarked, lower-resolution JPEG preview for free browsing.
+ * and generates a permanently watermarked, lower-resolution JPEG preview + base64 data URL.
  */
 export async function saveOriginalAndWatermarkedPreview(
   sessionId: string,
   photoId: string,
   imageBuffer: Buffer
-): Promise<{ originalPath: string; previewPath: string }> {
+): Promise<{ originalPath: string; previewPath: string; previewDataUrl: string }> {
   const origSessionDir = path.join(ORIGINALS_DIR, sessionId);
   const prevSessionDir = path.join(PREVIEWS_DIR, sessionId);
   fs.mkdirSync(origSessionDir, { recursive: true });
@@ -84,10 +88,16 @@ export async function saveOriginalAndWatermarkedPreview(
     </svg>
   `;
 
-  await sharp(resizedBase)
+  const previewBuffer = await sharp(resizedBase)
     .composite([{ input: Buffer.from(watermarkSvg), top: 0, left: 0 }])
     .jpeg({ quality: 82 })
-    .toFile(previewPath);
+    .toBuffer();
 
-  return { originalPath, previewPath };
+  fs.writeFileSync(previewPath, previewBuffer);
+
+  return {
+    originalPath,
+    previewPath,
+    previewDataUrl: `data:image/jpeg;base64,${previewBuffer.toString('base64')}`,
+  };
 }

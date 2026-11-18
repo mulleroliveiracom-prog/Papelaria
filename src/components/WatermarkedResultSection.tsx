@@ -35,9 +35,11 @@ export function WatermarkedResultSection({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {session.generatedPhotos.map((photo) => {
-            const previewUrl = `/api/media/preview/${session.sessionId}/${photo.photoId}?token=${encodeURIComponent(
-              session.sessionToken
-            )}`;
+            const previewUrl =
+              photo.previewDataUrl ??
+              `/api/media/preview/${session.sessionId}/${photo.photoId}?token=${encodeURIComponent(
+                session.sessionToken
+              )}`;
             return (
               <article
                 key={photo.photoId}
